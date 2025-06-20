@@ -1,0 +1,9 @@
+{
+  "name": "@repo/next-auth_types",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "exports":{
+    ".":"./index.ts"
+  }
+}
