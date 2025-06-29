@@ -3,7 +3,7 @@ import "./globals.css";
 import Providers from "@pay_space/providers";
 import { Toaster } from "react-hot-toast";
 import NavBar from "./components/NavBar";
-
+import SessionLayout from "./components/sessionLayout";
 // 🧠 Import Fonts from next/font/google
 import {
   Inter,
@@ -61,7 +61,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`
+        className={`bg-gray-50
           ${inter.variable}
           ${poppins.variable}
           ${manrope.variable}
@@ -87,17 +87,14 @@ export default function RootLayout({
         <Toaster position="bottom-right" />
         
         <Providers>
-        <NavBar/>
-
-        {children}
-
+          <SessionLayout>
+            {children}
+          </SessionLayout>
         </Providers>
       </body>
     </html>
   );
 }
-
-
 
 // import type { Metadata } from "next";
 // import { Geist, Geist_Mono } from "next/font/google";

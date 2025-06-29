@@ -167,7 +167,7 @@ export default function Verification(){
     }
 
     return (
-        <div className="flex items-center justify-center h-screen px-4">
+        <div className="flex items-center justify-center h-screen px-4 bg-gray-50">
           <div className="border border-gray-300 rounded-md px-8 py-8 flex items-center gap-4 flex-col w-[90%] sm:w-[400px]">
             <div className="text-5xl font-inter font-bold text-indigo-500 text-center">
               Pay Space
