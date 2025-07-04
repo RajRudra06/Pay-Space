@@ -1,4 +1,4 @@
-import { PrismaClient } from "@repo/db/client/index";
+import { PrismaClient } from "./src/generated/prisma";
 import dotenv from "dotenv";
 import fs from 'fs';  // Add this import
 

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "new-york",
+  "rsc": true,
+  "tsx": true,
+  "tailwind": {
+    "config": "tailwind.config.js",
+    "css": "app/globals.css",
+    "baseColor": "gray",
+    "cssVariables": true,
+    "prefix": ""
+  },
+  "aliases": {
+    "components": "@pay_space/components",
+    "utils": "@pay_space/lib/utils",
+    "ui": "@pay_space/components/ui",
+    "lib": "@pay_space/lib",
+    "hooks": "@pay_space/hooks"
+  },
+  "iconLibrary": "lucide"
+}

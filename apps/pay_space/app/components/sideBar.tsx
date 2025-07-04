@@ -70,7 +70,7 @@ export default function SideBar({ children }: { children: ReactNode }) {
 
 
   return (
-    <aside className="h-screen">
+    <aside className="h-screen sticky top-0">
       <nav className="h-full flex flex-col bg-gray-100 border-r shadow-sm justify-between">
         <div className="flex flex-col gap-8">
           <div  className="p-3 pb-2 flex justify-between items-center">

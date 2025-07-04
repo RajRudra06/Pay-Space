@@ -14,40 +14,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id          Int      @id @default(autoincrement())
-  email       String?  @unique
-  username    String? 
-  number      String   @unique
-  password    String
-  isVerified  Boolean  @default(false)
-  verifications Verification[]  
-  accounts       Accounts[]      
-
-}
-
-model Merchant {
-  id          Int     @id @default(autoincrement())
-  email       String  @unique
-  name        String?
-  auth_type   AuthType   
-}
-
-model Verification{
-  id          Int @id @default(autoincrement())
-  user_id     Int
-  otp         String
-  type        String
-  expiresAt   DateTime
-  user        User @relation(fields: [user_id], references: [id])
-
-}
-
-enum AuthType {
-  Google
-  Github
-}
-
 enum Txn_status{
   success
   failed
@@ -88,6 +54,17 @@ enum Bank_name{
   ubi
 }
 
+
+model User {
+  id          Int      @id @default(autoincrement())
+  email       String?  @unique
+  username    String? 
+  number      String   @unique
+  password    String
+  isVerified  Boolean  @default(false)
+  accounts       Accounts[]      
+}
+
 model Accounts {
   acc_id      Int @id @default(autoincrement())
   user_id     Int
@@ -113,4 +90,3 @@ model Transactions {
   category    String
   accounts    Accounts @relation(fields:[acc_id],references:[acc_id])
 }
-

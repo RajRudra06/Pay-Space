@@ -1,13 +1,8 @@
 {
-  "name": "@repo/db",
+  "name": "db_banks",
   "version": "1.0.0",
   "main": "index.js",
   "license": "MIT",
-  "exports": {
-    ".": "./index.ts",
-    "./prisma": "./prisma_client.ts",
-    "./client": "./src/generated/prisma/index.js"
-  },
   "dependencies": {
     "@prisma/client": "^6.9.0",
     "@repo/typescript-config": "*",
