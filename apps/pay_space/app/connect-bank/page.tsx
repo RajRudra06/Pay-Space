@@ -1,84 +1,197 @@
 "use client"
 
 import ProtectedRouting from "../components/protectedRouting"
-import React, { useState } from 'react';
+import React, { useState,useRef } from 'react';
 import { CheckCircle, Shield, ArrowRight, Building2, CreditCard } from 'lucide-react';
+import axios from "axios";
+import Loading from "../components/bankLoading";
+import { banks } from "../utils/banks";
+import useUserStore from "../utils/userDetails";
+import { PopupMessage } from "../components/popup";
+
+const API_URL=process.env.NEXT_PUBLIC_API_URL_DEV;
+const BANK_CONNECT_URL=process.env.NEXT_PUBLIC_BANK_FE;
+const PAY_SPACE_URL=process.env.NEXT_PUBLIC_PAY_SPACE_URL;
+const client_id=process.env.NEXT_PUBLIC_CLIENT_ID
+
 
 export default function ConnectBank(){
     const [selectedBank, setSelectedBank] = useState('');
     const [isConnecting, setIsConnecting] = useState(false);
+    const [connectionStatus, setConnectionState]=useState('idle')
+    const [popup,setPopup]=useState(null);
+    const [failedMsg,setFailedMsg]=useState({
+        submessage:'',
+        message:''
+    });
 
-    const banks = [
-        {
-        id: 'icici',
-        name: 'ICICI Bank',
-        logo: '🏦',
-        color: 'from-orange-500 to-red-500',
-        bgColor: 'bg-gradient-to-br from-orange-50 to-red-50',
-        borderColor: 'border-orange-200 hover:border-orange-400',
-        textColor: 'text-orange-700'
-        },
-        {
-        id: 'sbi',
-        name: 'State Bank of India',
-        logo: '🏛️',
-        color: 'from-blue-600 to-blue-800',
-        bgColor: 'bg-gradient-to-br from-blue-50 to-indigo-50',
-        borderColor: 'border-blue-200 hover:border-blue-400',
-        textColor: 'text-blue-700'
-        },
-        {
-        id: 'hdfc',
-        name: 'HDFC Bank',
-        logo: '🏢',
-        color: 'from-red-600 to-red-800',
-        bgColor: 'bg-gradient-to-br from-red-50 to-pink-50',
-        borderColor: 'border-red-200 hover:border-red-400',
-        textColor: 'text-red-700'
-        },
-        {
-        id: 'ubi',
-        name: 'Union Bank of India',
-        logo: '🏪',
-        color: 'from-green-600 to-green-800',
-        bgColor: 'bg-gradient-to-br from-green-50 to-emerald-50',
-        borderColor: 'border-green-200 hover:border-green-400',
-        textColor: 'text-green-700'
+    const [loadingState, setLoadingState] = useState('');
+    const [disableButton,setDisable]=useState(false)
+    const [codeSent,setCodeSent]=useState(false)
+    const codeSentRef = useRef(false); // <--- this holds the current value
+    const [showPopup, setShowPopup] = useState(false);
+    const{email}=useUserStore();
+
+    // set the selected bank
+  const handleBankSelect = (bankId:string) => {
+    setSelectedBank(bankId);
+  };
+
+
+// entire connection handling
+  const handleConnect = async () => {
+    if (!selectedBank) return;
+
+    setDisable(true)
+    setCodeSent(false);
+    codeSentRef.current = false;
+
+    
+
+    try{
+
+        const sendConnectReq=await axios.get(`${API_URL}/link-account`);
+        const selectedBankData = banks.find(bank => bank.id === selectedBank);
+
+
+        if(sendConnectReq.data.allowed){
+            setIsConnecting(true);
+            setConnectionState('connecting');
+            setLoadingState('connecting');
+
+            const authUrl = `${BANK_CONNECT_URL}/${selectedBankData?.urlName}/oauth/authorise?client_id=${client_id}&redirect_uri=${PAY_SPACE_URL}/connect-bank/callback&email=${email}`;
+
+            console.log(selectedBankData?.name)
+
+            // start the process of sending to bank page
+            setTimeout(()=>{
+                    setLoadingState('authenticating');
+
+
+                const newPopup:any = window.open(
+                    authUrl,
+                    'bankAuth',
+                    'width=500,height=600,scrollbars=yes,resizable=yes,top=100,left=100'
+                );
+                
+                setPopup(newPopup);
+            
+            },1000);
+
+
+            // listen for redirection thus making sure code is sent to pay space backend
+            window.addEventListener("message", (event) => {
+                console.log("Message received:", event.data, "from:", event.origin);
+
+                if (event.data.status === "success") {
+                    setFailedMsg({message:`Congratulations. Account added`, submessage:`Visit transaction tab to see your latest bank transactions.`})
+
+                    setCodeSent(true);
+                    codeSentRef.current = true;
+
+
+                    // setLoadingState("finalizing");
+
+                    setTimeout(()=>{
+
+                            setShowPopup(true)
+                            setIsConnecting(false)
+                            setDisable(false)
+                            setSelectedBank('')
+                        
+                       },1500)
+
+                   
+                }
+
+
+                else if(event.data.status === "doesnotexist"){
+                    setFailedMsg({message:`No account found for ${email}`, submessage:`Create a account with ${banks.find(bank => bank.id === selectedBank)?.name} on their page.`})
+
+                    setCodeSent(true);
+                    codeSentRef.current = true;
+
+
+                    setTimeout(()=>{
+
+                            setShowPopup(true)
+                            setIsConnecting(false)
+                            setDisable(false)
+                            setSelectedBank('')
+                        
+                       },1000)
+                }
+
+                else if(event.data.status==="failed"){   
+                    setCodeSent(true);
+                    codeSentRef.current = true;
+
+                    setFailedMsg({submessage:'Try again later.', message:'Something went wrong!!!'})
+
+
+                    setTimeout(()=>{
+
+                            setShowPopup(true)
+                            setIsConnecting(false)
+                            setDisable(false)
+                            setSelectedBank('')
+                        
+                       },1000)                    
+
+                }
+             }
+
+             );
+
+
+            setTimeout(()=>{
+
+                if(!codeSentRef.current){
+                    setFailedMsg({message:`No Response from ${banks.find(bank => bank.id === selectedBank)?.name}`, submessage:`Connection time ran out.`})
+                    setShowPopup(true)
+                    setIsConnecting(false)
+                    setDisable(false)
+                    setSelectedBank('')
+                }
+                
+                           
+             },60000)
+
+
         }
-    ];
 
-//   const handleBankSelect = (bankId) => {
-//     setSelectedBank(bankId);
-//   };
+    }
+    catch(err){
+        alert(`Could not connect to server, try again later...`);
 
-//   const handleConnect = async () => {
-//     if (!selectedBank) return;
+    }
     
-//     setIsConnecting(true);
-    
-//     // Simulate OAuth flow initiation
-//     setTimeout(() => {
-//       const selectedBankData = banks.find(bank => bank.id === selectedBank);
-      
-//       // In real implementation, this would initiate OAuth flow
-//       const authUrl = `https://${selectedBank}-bank.com/oauth/authorize?` +
-//         `response_type=code&` +
-//         `client_id=phonepe_app_123&` +
-//         `redirect_uri=https://phonepe.com/callback&` +
-//         `scope=read_balance,read_transactions&` +
-//         `state=random_security_string&` +
-//         `phone=${getCurrentUserPhone()}`;
-      
-//       console.log('Would redirect to:', authUrl);
-//       alert(`Connecting to ${selectedBankData.name}...`);
-//       setIsConnecting(false);
-//     }, 2000);
-//   };
+  };
 
-//   const getCurrentUserPhone = () => {
-//     // In real app, get from user context/state
-//     return '+919876543210';
-//   };
+  const getLoadingMessage = () => {
+    switch(loadingState) {
+      case 'connecting': return 'Connecting to bank...';
+      case 'authenticating': return 'Opening secure login...';
+      case 'processing': return 'Processing your credentials...';
+      case 'finalizing': return 'Finalizing connection...';
+      case 'doesnotexist': return `No account found with ${email}, Go on ${banks.find(bank => bank.id === selectedBank)?.name} and make a account`
+      case 'failed': return 'Something went wrong'
+      default: return 'Loading...';
+    }
+  };
+
+  const getLoadingSubMessage = () => {
+    const bankName = banks.find(b => b.id === selectedBank)?.name;
+    switch(loadingState) {
+      case 'connecting': return `Establishing secure connection with ${bankName}`;
+      case 'authenticating': return `Please complete login in the ${bankName} popup window`;
+      case 'processing': return 'Verifying your account details securely';
+      case 'finalizing': return 'Almost done! Setting up your connection...';
+      case 'doesnotexist': return `Go on ${banks.find(bank => bank.id === selectedBank)?.name} and make a account`
+      case 'failed':return 'Try again later'
+      default: return 'Please wait...';
+    }
+  };
 
   return (
  <ProtectedRouting fallback={null}>
@@ -87,15 +200,12 @@ export default function ConnectBank(){
     </div>
 
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center">
+
+
       <div className="w-full max-w-2xl">
         {/* Header */}
+
         <div className="text-center mb-5">
-          {/* <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mb-6 shadow-lg">
-            <Building2 className="w-8 h-8 text-white" />
-          </div> */}
-          {/* <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Connect Your Bank Account
-          </h1> */}
           <p className="text-lg text-gray-500 text-sm max-w-md mx-auto mt-7 font-semibold">
             Securely link your bank account to access your balance and transaction history
           </p>
@@ -115,7 +225,7 @@ export default function ConnectBank(){
             {banks.map((bank) => (
               <div
                 key={bank.id}
-                // onClick={() => handleBankSelect(bank.id)}
+                onClick={() => handleBankSelect(bank.id)}
                 className={`
                   relative p-6 rounded-xl border-2 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105
                   ${selectedBank === bank.id 
@@ -158,17 +268,19 @@ export default function ConnectBank(){
 
           {/* Connect Button */}
           <button
-            // onClick={handleConnect}
-            disabled={!selectedBank || isConnecting}
+            onClick={handleConnect}
+            disabled={disableButton}
             className={`
               w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-300 flex items-center justify-center
-              ${selectedBank && !isConnecting
+              ${selectedBank && !disableButton
                 ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-1'
                 : 'bg-gray-200 text-gray-500 cursor-not-allowed'
               }
             `}
           >
-            {isConnecting ? (
+
+
+            {disableButton ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                 Connecting...
@@ -194,35 +306,31 @@ export default function ConnectBank(){
               </div>
             </div>
           </div>
+
+
         </div>
 
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
           <p>Powered by OAuth 2.0 • Your credentials are never shared with us</p>
         </div>
+
+
       </div>
+
+
+
     </div>
+          <Loading message={getLoadingMessage()} subMessage={getLoadingSubMessage()} isVisible={isConnecting}/>
+          {showPopup && (
+          <PopupMessage 
+            message={failedMsg.message}
+            subMessage={failedMsg.submessage}
+            onClose={() => setShowPopup(false)}
+          />
+        )}
     
 </ProtectedRouting>
 
   );
 };
-
-
-    // return(
-    //     <>
-    //         <ProtectedRouting fallback={null}>
-    //             <>
-    //             {/* intro seg */}
-    //             <div className="flex gap-4 text-5xl px-5 py-3 font-bold">
-    //                 <div className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">Connect your bank account</div>
-    //             </div>
-
-    //             {/*  */}
-    //             </>
-    //         </ProtectedRouting>
-
-    //     </>
-        
-    // )
-// }

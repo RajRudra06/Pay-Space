@@ -15,7 +15,7 @@ export default function SessionLayout({ children }: { children: ReactNode }) {
   const authPages = ['/signin', '/signup', '/verification'];
   const isAuthPage = authPages.some(page => pathname.startsWith(page));
   
-  const navBarPages = ['/', '/about','/connect-bank','/transfer','/transactions','/payments-methods','/profile','/balance'];
+  const navBarPages = ['/', '/about','/connect-bank','/transfer','/transactions','/payments-methods','/profile','/balance','/connect-bank/callback'];
   const shouldShowNavBar = navBarPages.includes(pathname);
 
   if (status === "loading") {

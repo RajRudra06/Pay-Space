@@ -122,10 +122,10 @@ export default function SideBar({ children }: { children: ReactNode }) {
           {showPopup && (
             <div 
               ref={popupRef}
-              className="absolute -bottom-[-54px] -right-[320px] mb-2 bg-white shadow-xl border border-gray-200 rounded-lg py-1 w-64 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2"
+              className="absolute -bottom-[-54px] -right-[287px] mb-2 bg-white shadow-xl border border-gray-200 rounded-lg py-1 w-35 z-50 animate-in fade-in-0 zoom-in-95 slide-in-from-bottom-2"
             >
               {/* User Info Section */}
-              <div className="px-3 py-2 flex items-center gap-3">
+              <div className="px-2 py-2 flex items-center gap-3">
                 <div className="flex-shrink-0">
                   <UserLogo username={username} />
                 </div>

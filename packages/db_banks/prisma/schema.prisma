@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
   output   = "../src/generated/prisma"
@@ -11,82 +5,113 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL_DB_BANK")
 }
 
-enum Txn_status{
+model User {
+  id         Int        @id @default(autoincrement())
+  email      String?    @unique
+  username   String?
+  number     String     @unique
+  password   String
+  isVerified Boolean    @default(false)
+  accounts   Accounts[]
+  verification  Verification[]
+  auth_code     Auth_codes[]
+}
+
+model CommercialClients {
+  id            Int      @id @default(autoincrement())
+  client_id     String?  @unique
+  assigned_date DateTime
+  sharedSecret  String   @unique
+  expiresAt     DateTime
+}
+
+model Accounts {
+  acc_id          Int            @id @default(autoincrement())
+  user_id         Int
+  acc_name        String
+  acc_number      String
+  status          Acc_status
+  type            Acc_type
+  bank            Bank_name
+  balance         Decimal        @db.Decimal(12, 2)
+  connectedToMain Boolean
+  created_At      DateTime
+  user            User           @relation(fields: [user_id], references: [id])
+  transactions    Transactions[]
+}
+
+model Transactions {
+  txn_id     Int         @id @default(autoincrement())
+  acc_id     Int
+  status     Txn_status
+  type       Txn_type
+  created_At DateTime
+  channel    Txn_channel
+  category   String
+  accounts   Accounts    @relation(fields: [acc_id], references: [acc_id])
+}
+
+model Verification{
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  otp         String
+  type        String
+  expiresAt   DateTime
+  user        User @relation(fields: [user_id], references: [id])
+
+}
+
+model Auth_codes{
+  id            Int @id @default(autoincrement())
+  code          String
+  user_id       Int
+  client_id     String
+  redirect_uri  String
+  createdAt     DateTime
+  expiresAt     DateTime
+  used          Boolean @default(false)
+  user        User @relation(fields: [user_id], references: [id])
+
+}
+
+enum Txn_status {
   success
   failed
   pending
 }
 
-enum Acc_status{
+enum Acc_status {
   active
   closed
   frozen
 }
 
-enum Txn_type{
+enum Txn_type {
   credit
   debit
 }
 
-
-enum Acc_type{
+enum Acc_type {
   savings
   checking
-  wallet 
+  wallet
   joint
   business
 }
 
-enum Txn_channel{
+enum Txn_channel {
   upi
   wallet
   netbanking
   card
 }
 
-enum Bank_name{
+enum Bank_name {
   icici
   sbi
   hdfc
   ubi
-}
-
-
-model User {
-  id          Int      @id @default(autoincrement())
-  email       String?  @unique
-  username    String? 
-  number      String   @unique
-  password    String
-  isVerified  Boolean  @default(false)
-  accounts       Accounts[]      
-}
-
-model Accounts {
-  acc_id      Int @id @default(autoincrement())
-  user_id     Int
-  acc_name    String
-  acc_number  String
-  status      Acc_status 
-  type        Acc_type
-  bank        Bank_name
-  balance     Decimal @db.Decimal(12, 2)
-  connectedToMain Boolean
-  created_At  DateTime
-  user        User @relation(fields: [user_id], references: [id])
-  transactions Transactions[]
-}
-
-model Transactions {
-  txn_id      Int @id @default(autoincrement())
-  acc_id      Int 
-  status      Txn_status
-  type        Txn_type
-  created_At  DateTime
-  channel     Txn_channel
-  category    String
-  accounts    Accounts @relation(fields:[acc_id],references:[acc_id])
 }

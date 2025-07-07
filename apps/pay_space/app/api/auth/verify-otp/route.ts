@@ -1,14 +1,6 @@
 import { NextResponse,NextRequest } from "next/server";
 import prisma from "@repo/db/prisma"
 import bcrypt from "bcrypt"
-import crypto from "crypto"
-import {Resend} from "resend"
-import { getOTPEmailTemplate } from "@pay_space/app/lib/email_template";
-import {z} from "zod"
-import { sendMail } from "@pay_space/app/lib/send_mail";
-import { transporter } from "@pay_space/app/lib/email_transporter";
-import { sendingFormat } from "@pay_space/app/lib/send_mail";
-import { SentMessageInfo } from 'nodemailer';
 
 export async function POST(req:NextRequest) {
 
@@ -79,6 +71,7 @@ export async function POST(req:NextRequest) {
               type: types
             },
           });
+
           return NextResponse.json({ msg: 'Correct OTP, verified Succesfully',done:true});          
 
     }
