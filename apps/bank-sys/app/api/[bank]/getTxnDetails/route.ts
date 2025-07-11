@@ -1,0 +1,48 @@
+import prisma_Bank from "@repo/db_banks/prisma_client";
+import { NextRequest,NextResponse } from "next/server";
+import bcrypt from "bcrypt"
+import { Bank_name } from "@repo/db_banks/src/generated/prisma/client";
+import { authMediator, maskedAccountOutput } from "../../../utils/authMediator";
+
+
+export async function POST(req:NextRequest,{params}:{params:{bank:string}}){
+    const {bank}=params;
+    const bankName=bank.toLowerCase();
+    const {access_token,user_email,acc_name}=await req.json();
+    
+    try{
+        const res=await authMediator(req,user_email,access_token,bankName);
+
+        if(res.ok){
+            // decrypt account numbers
+            const findUserAccount=await prisma_Bank.accounts.findFirst({
+                where:{
+                    bank:bankName as Bank_name,
+                    user_id:res.user_id,
+                    connectedToMain:true,
+                    acc_name:acc_name
+                }
+            })
+    
+            // for now direct names but later when bank login is done masking+encyption of sensitive info
+            const getTransactionsPerAccount=await prisma_Bank.transactions.findMany({
+                where:{
+                    acc_id:findUserAccount?.acc_id,
+                }
+            })
+    
+            return NextResponse.json({done:true,msg:`Legible transactions found for the given account`,transactions:getTransactionsPerAccount},{status:200})
+        }
+    
+        else{
+            return NextResponse.json({done:false,msg:`Error occured--->${res.msg}`},{status:200})
+        }
+    
+    }
+    
+        
+    catch(err){
+        return NextResponse.json({done:false,msg:`Internal Server Error, try again later`},{status:400})
+    }
+
+}

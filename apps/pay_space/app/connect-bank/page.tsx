@@ -14,7 +14,6 @@ const BANK_CONNECT_URL=process.env.NEXT_PUBLIC_BANK_FE;
 const PAY_SPACE_URL=process.env.NEXT_PUBLIC_PAY_SPACE_URL;
 const client_id=process.env.NEXT_PUBLIC_CLIENT_ID
 
-
 export default function ConnectBank(){
     const [selectedBank, setSelectedBank] = useState('');
     const [isConnecting, setIsConnecting] = useState(false);
@@ -28,7 +27,7 @@ export default function ConnectBank(){
     const [loadingState, setLoadingState] = useState('');
     const [disableButton,setDisable]=useState(false)
     const [codeSent,setCodeSent]=useState(false)
-    const codeSentRef = useRef(false); // <--- this holds the current value
+    const codeSentRef = useRef(false); 
     const [showPopup, setShowPopup] = useState(false);
     const{email}=useUserStore();
 
@@ -45,13 +44,15 @@ export default function ConnectBank(){
     setDisable(true)
     setCodeSent(false);
     codeSentRef.current = false;
-
     
 
     try{
-
-        const sendConnectReq=await axios.get(`${API_URL}/link-account`);
         const selectedBankData = banks.find(bank => bank.id === selectedBank);
+
+        const sendConnectReq=await axios.post(`${API_URL}/link-account`,{
+            bank:selectedBankData?.urlName,
+            user_email:email,
+        });
 
 
         if(sendConnectReq.data.allowed){
@@ -61,7 +62,7 @@ export default function ConnectBank(){
 
             const authUrl = `${BANK_CONNECT_URL}/${selectedBankData?.urlName}/oauth/authorise?client_id=${client_id}&redirect_uri=${PAY_SPACE_URL}/connect-bank/callback&email=${email}`;
 
-            console.log(selectedBankData?.name)
+            console.log(selectedBankData?.urlName)
 
             // start the process of sending to bank page
             setTimeout(()=>{
@@ -90,7 +91,7 @@ export default function ConnectBank(){
                     codeSentRef.current = true;
 
 
-                    // setLoadingState("finalizing");
+                    setLoadingState("finalizing");
 
                     setTimeout(()=>{
 
@@ -155,9 +156,23 @@ export default function ConnectBank(){
                 }
                 
                            
-             },60000)
+             },120000)
 
 
+        }
+
+        else if(!sendConnectReq.data.allowed){
+            setDisable(false)
+            setCodeSent(true);
+            setShowPopup(true);
+            codeSentRef.current = true;
+            if(sendConnectReq.data.msg==="alreadyexist"){
+                setFailedMsg({message:`You already have connected your ${selectedBankData?.urlName} bank account with Pay Space.`, submessage:`Only one connection per user per bank allowed.`})
+            }
+            else{
+                setFailedMsg({message:`${sendConnectReq.data.msg}`, submessage:``})
+
+            }
         }
 
     }

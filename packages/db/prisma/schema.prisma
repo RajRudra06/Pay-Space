@@ -22,7 +22,9 @@ model User {
   password    String
   isVerified  Boolean  @default(false)
   verifications Verification[]  
-  accounts       Accounts[]      
+  accounts       Accounts[]   
+  linkedbankedtoken LinkedBankToken[] 
+  defaultAccount    DefaultAccount[]
 
 }
 
@@ -39,6 +41,15 @@ model Verification{
   otp         String
   type        String
   expiresAt   DateTime
+  user        User @relation(fields: [user_id], references: [id])
+}
+
+model DefaultAccount{
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  bankName    Bank_name
+  accOrgType  Acc_type
+
   user        User @relation(fields: [user_id], references: [id])
 
 }
@@ -101,6 +112,20 @@ model Accounts {
   created_At  DateTime
   user        User @relation(fields: [user_id], references: [id])
   transactions Transactions[]
+}
+
+model LinkedBankToken{
+  id           Int @id @default(autoincrement())
+  user_id      Int
+  bankName     String
+  accessToken  String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@unique([user_id, bankName])
+
+  user        User @relation(fields: [user_id], references: [id])
+
 }
 
 model Transactions {

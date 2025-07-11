@@ -6,6 +6,8 @@ interface BalanceState {
     email:string
     number:string
     balance: number
+    bankCardCalled:boolean
+    setbankCardCalled:(bankCardCalled:boolean)=>void
     setUsername: (username: string) => void
     setEmail: (email: string) => void
     setNumber:(number:string)=>void
@@ -21,6 +23,8 @@ export const userStore = create(
         email: "",
         number: "",
         balance: 0,
+        bankCardCalled:false,
+        setbankCardCalled:(bankCardCalled)=>set({bankCardCalled}),
         setUsername: (username) => set({ username }),
         setEmail: (email) => set({ email }),
         setNumber: (number) => set({ number }),

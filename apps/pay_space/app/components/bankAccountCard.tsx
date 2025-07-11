@@ -1,7 +1,14 @@
 import FormatCurrency from "./formatCurrency"
 import DoughNutChart from "./doughnutChart"
+import useUserStore from "../utils/userDetails";
 
 export default function BankAccountCard({numberOfAccount,totalBalance,bankNames,balances}:{numberOfAccount:number,totalBalance:number,bankNames:string[],balances:number[]}) {
+
+  const { username, setUsername,setEmail,setNumber,bankCardCalled,setbankCardCalled} = useUserStore();
+
+console.log("bank account triggered")
+if(bankCardCalled){
+
   return (
     <div className="bg-gray-100 rounded-lg">
       <div className="flex gap-6 border-1 border-gray-200 rounded-lg p-3 shadow-lg bg-white hover:shadow-xl transition-shadow items-center">
@@ -21,4 +28,9 @@ export default function BankAccountCard({numberOfAccount,totalBalance,bankNames,
       </div>
     </div>
   );
+}
+else{
+  return null
+}
+  
 }

@@ -18,14 +18,19 @@ model User {
   accounts   Accounts[]
   verification  Verification[]
   auth_code     Auth_codes[]
+  tokens        Tokens[]
 }
 
 model CommercialClients {
   id            Int      @id @default(autoincrement())
-  client_id     String?  @unique
+  client_id     String  @unique
   assigned_date DateTime
   sharedSecret  String   @unique
   expiresAt     DateTime
+  tokens        Tokens[]
+  @@index([client_id])
+  @@index([expiresAt]) // For cleanup
+
 }
 
 model Accounts {
@@ -41,6 +46,9 @@ model Accounts {
   created_At      DateTime
   user            User           @relation(fields: [user_id], references: [id])
   transactions    Transactions[]
+  
+  @@unique([user_id, bank, acc_name, type])
+
 }
 
 model Transactions {
@@ -50,7 +58,10 @@ model Transactions {
   type       Txn_type
   created_At DateTime
   channel    Txn_channel
-  category   String
+  category   Txn_Cat
+  counterPartyID  String   
+  counterPartyType String
+
   accounts   Accounts    @relation(fields: [acc_id], references: [acc_id])
 }
 
@@ -73,7 +84,30 @@ model Auth_codes{
   createdAt     DateTime
   expiresAt     DateTime
   used          Boolean @default(false)
+  user          User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, client_id])
+  @@index([code]) // For faster code lookups
+  @@index([expiresAt]) // For cleanup jobs
+
+}
+
+model Tokens{
+  id          Int @id @default(autoincrement())
+  user_id     Int
+  client_id   String
+  hashedToken String
+  bankName    String
+  created_At  DateTime @default(now())
+  expiresAt   DateTime
+  revoked     Boolean @default(false)
+
   user        User @relation(fields: [user_id], references: [id])
+  commercialClients   CommercialClients @relation(fields:[client_id],references:[client_id])
+
+  @@index([user_id, client_id])
+  @@unique([user_id, bankName])
+
 
 }
 
@@ -107,6 +141,10 @@ enum Txn_channel {
   wallet
   netbanking
   card
+  cheque
+  cheque_DD
+  RTGS
+  NEFT
 }
 
 enum Bank_name {
@@ -114,4 +152,20 @@ enum Bank_name {
   sbi
   hdfc
   ubi
+}
+
+enum Txn_Cat{
+  Utilities
+  Insurance
+  Dine
+  Shopping
+  Entertainment
+  Travel
+  Load_EMI
+  Savings_Transfers
+  Investments
+  Education
+  Health
+  Income
+  Taxes
 }

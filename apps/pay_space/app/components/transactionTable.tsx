@@ -22,7 +22,7 @@ export default function TransactionTable({ data }: { data: any[] }) {
               key={i}
               className={`border-t hover:bg-gray-50 transition-all duration-150 ${
                 txn.c === "credit" ? "bg-green-50" : "bg-red-50"
-              } text-lg font-bold`}
+              } text-md font-bold`}
             >
               <td className="px-6 py-4 font-medium text-gray-800">{txn.transactionName}</td>
 

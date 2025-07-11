@@ -2,15 +2,17 @@ import { NextResponse,NextRequest } from "next/server";
 import prisma from "@repo/db_banks/prisma_client"
 import crypto from "crypto"
 import bcrypt from "bcrypt"
+import { Bank_name } from "@repo/db_banks/src/generated/prisma/client";
 import { sendMail } from "pay_space/app/lib/send_mail"
 import { transporter } from "pay_space/app/lib/email_transporter";
 import { sendingFormat } from "pay_space/app/lib/send_mail";
 import { SentMessageInfo } from 'nodemailer';
 
-
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest,{params}:{params:{bank:string}}) {
 
     const {client_id,user_email}=await req.json();
+    const { bank } = params;
+    const bankName=bank.toLowerCase();
 
     try{
     
@@ -27,7 +29,15 @@ export async function POST(req: NextRequest) {
             }
         })
 
-        if(doesCommercialClientExists&&doesUserExists){
+        // does user hava account ?
+        const doesUserAccountExists=await prisma.accounts.findFirst({
+            where:{
+                user_id:doesUserExists?.id,
+                bank:bankName as Bank_name
+            }
+        })
+
+        if(doesCommercialClientExists&&doesUserExists&&doesUserAccountExists){
             // send otp 
 
             const prevOTP=await prisma.verification.deleteMany({
@@ -71,6 +81,10 @@ export async function POST(req: NextRequest) {
         }
         
         else {
+
+            if(!doesUserAccountExists){
+                return NextResponse.json({ msg:`No bank account found for this user.`,done:false}, { status: 200 });
+            }
             return NextResponse.json({ msg:`Client/User DNE`,done:false}, { status: 200 });
         }
 

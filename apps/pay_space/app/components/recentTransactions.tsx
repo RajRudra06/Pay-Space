@@ -3,6 +3,8 @@ import TransactionsTabs from "./transactionTabs";
 import { Accounts } from "../lib/accounts";
 
 export default function RecentTransaction({accounts,defaultAccount}:{accounts:Accounts[],defaultAccount:Accounts}){
+
+    console.log("FROM RECENT TRASNAC",defaultAccount,"accounts--->",accounts)
     return(
         <>
         <div className="mt-10 flex justify-between">
@@ -13,9 +15,7 @@ export default function RecentTransaction({accounts,defaultAccount}:{accounts:Ac
                 <Link className="rounded-lg p-2 text-gray-600 border-2 border-gray-200 font-semibold" href="/transactions">View all</Link>
             </div>
         </div>
-        
-        {/* Demo component positioned under Recent Transactions */}
-      
+              
         <div className="">
             <TransactionsTabs accounts={accounts} defaultAccount={defaultAccount}/>
         </div>

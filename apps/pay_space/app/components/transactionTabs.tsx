@@ -4,44 +4,56 @@ import { useEffect, useState } from "react"
 import TransactionTable from "./transactionTable"
 import { Accounts } from "../lib/accounts"
 import DefaultCard from "./bankCard"
+import axios from "axios"
 
 export default function TransactionsTabs({accounts, defaultAccount}:{accounts:Accounts[], defaultAccount:Accounts}) {
+  console.log("FROM RECENT TRASNAC2222",defaultAccount,"accounts--->222",accounts)
+  const API_URL=process.env.NEXT_PUBLIC_API_URL_DEV;
+
   const [transactions, setTransactions] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState(() => {
-    return accounts && accounts.length > 0 ? accounts[0].id : ""
+    return accounts && accounts.length > 0 ? accounts[0].accountName : ""
   })
   const[val,setVal]=useState(true);
   
   useEffect(() => {
     if (accounts && accounts.length > 0 && !activeTab) {
-      setActiveTab(accounts[0].id)
+      setActiveTab(accounts[0].accountName)
     }
   }, [accounts, activeTab])
   
-  const activeAccount = accounts.find(acc => acc.id === activeTab)
+  const activeAccount = accounts.find(acc => acc.accountName === activeTab)
   
   useEffect(() => {
-    console.log("changed")
-    console.log(activeTab, "hjhjh", activeAccount)
     // Replace this with  actual fetch
+    
     if(val){
       setTransactions(mockTransactions)
       setVal(false)
     }
     else{
-setTransactions(mockTransactions2)
-setVal(true)
+      setTransactions(mockTransactions2)
+      setVal(true)
 
     }
-
-
     fetchTransactions();
   }, [activeTab])
   
-  function fetchTransactions() {
+  async function fetchTransactions() {
     console.log(activeTab)
     try {
-      // fetch api for activeTab accountID
+
+      const getTxnForAccount=await axios.post(`${API_URL}/account-info/txn-details`,{
+          acc_name:activeAccount?.accountName,
+          bankAcc:activeAccount?.accountBank
+      })
+
+      if(getTxnForAccount.data.done){
+        setTransactions(getTxnForAccount.data.txns)
+      }
+
+
+
       // setTransactions(data fetched from here)
     }
     catch {
@@ -149,8 +161,8 @@ setVal(true)
         <TabsList >
           {accounts?.map(account => (
           <TabsTrigger
-          key={account.id}
-          value={account.id}
+          key={account.accountName}
+          value={account.accountName}
           className={`
             text-lg font-medium px-4 py-1 m-1 rounded-lg 
             border border-transparent 
@@ -161,7 +173,7 @@ setVal(true)
             hover:bg-blue-100 mt-10
           `}
         >
-          {account.name}
+          {account.accountName}
         </TabsTrigger>
         
           ))}
@@ -169,9 +181,9 @@ setVal(true)
 
         {activeAccount && (
         <DefaultCard
-          balance={activeAccount.balance}
-          bankname={activeAccount.name}
-          accountType="checking"
+          balance={activeAccount.accountBalance}
+          bankname={activeAccount.accountName}
+          accountType={activeAccount.accountType}
         />
       )}
         
