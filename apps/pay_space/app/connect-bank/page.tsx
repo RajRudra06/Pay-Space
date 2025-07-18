@@ -208,28 +208,33 @@ export default function ConnectBank(){
     }
   };
 
+
   return (
  <ProtectedRouting fallback={null}>
-     <div className="flex gap-4 text-5xl px-5 py-3 font-bold">
-        <div className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">Connect your bank account</div>
-    </div>
+  <div className="w-full flex justify-start">
+                <div className="flex flex-col">
+                <div className="flex gap-4 text-5xl px-5 py-3 font-bold">
+                    
+                    <div className="bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600       bg-clip-text text-transparent font-bold">Connect your Bank Account
+                    </div>
+                </div>
+
+                    <div className="text-gray-500 px-6 font-medium">
+                    Securely link your bank account to access your balance and transaction history
+                    </div>
+                </div>
+            </div>
+    
 
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center">
 
 
       <div className="w-full max-w-2xl">
-        {/* Header */}
-
-        <div className="text-center mb-5">
-          <p className="text-lg text-gray-500 text-sm max-w-md mx-auto mt-7 font-semibold">
-            Securely link your bank account to access your balance and transaction history
-          </p>
-        </div>
 
         {/* Main Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 backdrop-blur-sm border border-white/20">
           {/* Security Badge */}
-          <div className="flex items-center justify-center mb-8">
+          <div className="flex items-center justify-center mb-5">
             <div className="inline-flex items-center px-4 py-2 bg-green-50 border border-green-200 rounded-full">
               <Shield className="w-4 h-4 text-green-600 mr-2" />
               <span className="text-sm font-medium text-green-800">Bank-level Security</span>

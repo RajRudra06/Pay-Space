@@ -5,11 +5,14 @@ import { Bank_name } from "@repo/db_banks/src/generated/prisma/client";
 import { authMediator } from "web/app/utils/authMediator";
 import { maskedAccountOutput } from "web/app/utils/authMediator"; 
 
+
+  
 export async function POST(req:NextRequest,{params}:{params:{bank:string}}){
     const {bank}=params;
     const bankName=bank.toLowerCase();
     const {access_token,user_email}=await req.json();
 
+   
     try{
 
         const res=await authMediator(req,user_email,access_token,bankName);

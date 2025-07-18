@@ -1,58 +1,83 @@
-export default function TransactionTable({ data }: { data: any[] }) {
-  if (!data.length) {
-    return <p className="text-sm text-gray-500 text-center mt-4">No transactions</p>;
+import Transaction from "../lib/transactions";
+import Loading from "../loading";
+
+export default function TransactionTable({ data, isLoading }: { data: Transaction[], isLoading: boolean }) {
+  if (isLoading) {
+    return <Loading />;
+  }
+  
+  if (data.length === 0) {
+    return (
+      <div className="text-center mt-8 p-8 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl border border-slate-200">
+        <p className="text-lg text-slate-600 font-medium">No Transactions Found</p>
+        <p className="text-sm text-slate-500 mt-2">Your transaction history will appear here</p>
+      </div>
+    );
   }
 
   return (
-    <div className="overflow-x-auto mt-6 shadow-md rounded-xl">
-      <table className="min-w-full bg-white text-sm rounded-xl overflow-hidden">
-        <thead className="bg-gray-100 text-gray-500 text-md uppercase tracking-wide text-left">
+    <div className="overflow-x-auto mt-6 shadow-xl rounded-2xl bg-white border border-slate-200">
+      <table className="min-w-full text-sm">
+        <thead className="bg-gray-600 text-white">
           <tr>
-            <th className="px-6 py-4">Transaction</th>
-            <th className="px-6 py-4">Amount</th>
-            <th className="px-6 py-4">Status</th>
-            <th className="px-6 py-4">Date</th>
-            <th className="px-6 py-4">Channel</th>
-            <th className="px-6 py-4">Category</th>
+            <th className="px-6 py-4 text-left font-semibold uppercase tracking-wider">Transaction</th>
+            <th className="px-6 py-4 text-left font-semibold uppercase tracking-wider">Amount</th>
+            <th className="px-6 py-4 text-left font-semibold uppercase tracking-wider">Status</th>
+            <th className="px-6 py-4 text-left font-semibold uppercase tracking-wider">Date</th>
+            <th className="px-6 py-4 text-left font-semibold uppercase tracking-wider">Channel</th>
+            <th className="px-6 py-4 text-left font-semibold uppercase tracking-wider">Category</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-slate-200">
           {data.map((txn, i) => (
             <tr 
               key={i}
-              className={`border-t hover:bg-gray-50 transition-all duration-150 ${
-                txn.c === "credit" ? "bg-green-50" : "bg-red-50"
-              } text-md font-bold`}
+              className={`transition-all duration-200 hover:scale-[1.01] hover:shadow-md ${
+                txn.type === "credit" 
+                  ? "bg-gradient-to-r from-emerald-50 to-green-50 hover:from-emerald-100 hover:to-green-100 border-l-4 border-emerald-400" 
+                  : "bg-gradient-to-r from-rose-50 to-red-50 hover:from-rose-100 hover:to-red-100 border-l-4 border-rose-400"
+              }`}
             >
-              <td className="px-6 py-4 font-medium text-gray-800">{txn.transactionName}</td>
+              <td className="px-6 py-4 font-semibold text-slate-800">
+                {txn.counterPartyID}
+              </td>
 
-              <td
-                className={`px-6 py-4 font-semibold ${
-                  txn.c === "credit" ? "text-green-600" : "text-red-500"
-                }`}
-              >
-                {new Intl.NumberFormat("en-IN", {
-                  style: "currency",
-                  currency: "INR",
-                }).format(txn.amount)}
+              <td className={`px-6 py-4 font-bold text-lg ${
+                txn.type === "credit" ? "text-emerald-600" : "text-rose-600"
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className={`w-2 h-2 rounded-full ${
+                    txn.type === "credit" ? "bg-emerald-500" : "bg-rose-500"
+                  }`}></span>
+                  {txn.type === "credit" ? "+" : "-"}
+                  {new Intl.NumberFormat("en-IN", {
+                    style: "currency",
+                    currency: "INR",
+                  }).format(txn.Amount)}
+                </div>
               </td>
 
               <td className="px-6 py-4">
-                <span
-                  className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                    txn.status === "Success"
-                      ? "bg-green-100 border-2 border-green-600 text-green-700"
-                      : txn.status === "Pending"
-                      ? "bg-yellow-100 border-2 border-yellow-500 text-yellow-700"
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  ● {txn.status}
+                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide ${
+                  txn.status === "success"
+                    ? "bg-emerald-100 text-emerald-800 border-2 border-emerald-300"
+                    : txn.status === "pending"
+                    ? "bg-amber-100 text-amber-800 border-2 border-amber-300"
+                    : "bg-rose-100 text-rose-800 border-2 border-rose-300"
+                }`}>
+                  <span className={`w-2 h-2 rounded-full mr-2 ${
+                    txn.status === "success"
+                      ? "bg-emerald-500"
+                      : txn.status === "pending"
+                      ? "bg-amber-500"
+                      : "bg-rose-500"
+                  }`}></span>
+                  {txn.status}
                 </span>
               </td>
 
-              <td className="px-6 py-4 text-gray-700">
-                {new Date(txn.date).toLocaleString("en-US", {
+              <td className="px-6 py-4 text-slate-700 font-medium">
+                {new Date(txn.created_At).toLocaleString("en-US", {
                   weekday: "short",
                   month: "short",
                   day: "numeric",
@@ -62,10 +87,12 @@ export default function TransactionTable({ data }: { data: any[] }) {
                 })}
               </td>
 
-              <td className="px-6 py-4 text-gray-600">{txn.channel || "N/A"}</td>
+              <td className="px-6 py-4 text-slate-600 font-medium">
+                {txn.channel || "N/A"}
+              </td>
 
               <td className="px-6 py-4">
-                <span className="inline-block px-3 py-1 rounded-full bg-blue-100 text-blue-600 text-xs font-medium">
+                <span className="inline-block px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold uppercase tracking-wide shadow-md">
                   {txn.category}
                 </span>
               </td>

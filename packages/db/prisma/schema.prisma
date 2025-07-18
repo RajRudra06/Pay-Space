@@ -133,6 +133,7 @@ model Transactions {
   acc_id      Int 
   status      Txn_status
   type        Txn_type
+  amount     Int
   created_At  DateTime
   channel     Txn_channel
   category    String

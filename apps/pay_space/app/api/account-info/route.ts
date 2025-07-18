@@ -8,12 +8,13 @@ const PAY_SPACE_ID=process.env.NEXT_PUBLIC_CLIENT_ID;
 const PAY_SPACE_SECRET=process.env.BANK_PAY_SPACE_SECRET;
 const basicAuth = Buffer.from(`${PAY_SPACE_ID}:${PAY_SPACE_SECRET}`).toString("base64");
 
-export async function GET(req:NextRequest){
+
+export async function POST(req:NextRequest){
     const session = await getServerSession(authOptions);
     let bankName:string|undefined;
+    let orgType:string|undefined;
 
-    // const searchParams=req.nextUrl.searchParams;
-    // const bankName=searchParams.get('bank')?.toUpperCase();
+    const {bankNameBankTransaction}=await req.json();
 
     if(!session){
         return NextResponse.json({
@@ -23,29 +24,45 @@ export async function GET(req:NextRequest){
 
     const doesUserExist=await prisma.user.findFirst({
         where:{
-            email:session.user?.email,
+            email:session!.user?.email,
             // email:"rudrarajpurohit06@gmail.com",
             isVerified:true
         }
     })
 
-    const defaultBankCheck=await prisma.defaultAccount.findFirst({
-        where:{
-            user_id:doesUserExist?.id,
-        }
-    })
-
-    if(!defaultBankCheck){
-        const doesUserLinkedAccountExists=await prisma.linkedBankToken.findFirst({
+    if(!bankNameBankTransaction){
+        const defaultBankCheck=await prisma.defaultAccount.findFirst({
             where:{
                 user_id:doesUserExist?.id,
             }
         })
-        bankName=doesUserLinkedAccountExists?.bankName;
+    
+        if(!defaultBankCheck){
+            const doesUserLinkedAccountExists=await prisma.linkedBankToken.findFirst({
+                where:{
+                    user_id:doesUserExist?.id,
+                }
+            })
+            bankName=doesUserLinkedAccountExists?.bankName;
+
+            // find a way to get the default account for the non stored bank
+            orgType="savings"
+        }
+        else{
+            bankName=defaultBankCheck.bankName.toUpperCase();
+            orgType=defaultBankCheck.accOrgType
+        }
+    }
+
+    else if(bankNameBankTransaction==="pay_space"){
+        // make a txn call to pay space txn table
     }
     else{
-        bankName=defaultBankCheck.bankName.toUpperCase();
+        bankName=bankNameBankTransaction.toUpperCase();
+        orgType="savings"
     }
+
+    
 
     const doesUserLinkedAccountExists=await prisma.linkedBankToken.findFirst({
         where:{
@@ -88,7 +105,7 @@ export async function GET(req:NextRequest){
       
     if(bankAPIAccountListRes.done){
         return NextResponse.json({
-            msg:`Legible account found`,done:true,accounts:bankAPIAccountListRes.accounts,totalBalance:totalBalance,defaultAccType:defaultBankCheck?.accOrgType
+            msg:`Legible account found`,done:true,accounts:bankAPIAccountListRes.accounts,totalBalance:totalBalance,defaultAccType:orgType
         },{status:200})
     }
 

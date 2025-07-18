@@ -9,6 +9,7 @@ import useSignOut from "../utils/signout";
 import { createContext, useEffect, useRef } from "react";
 import Router from "next/router";
 import { fa } from "zod/v4/locales";
+import { ModeToggle } from "./darkToggle";
 
 // @ts-ignore
 export const SideBarContext = createContext();

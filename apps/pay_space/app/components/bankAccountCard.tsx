@@ -11,7 +11,7 @@ if(bankCardCalled){
 
   return (
     <div className="bg-gray-100 rounded-lg">
-      <div className="flex gap-6 border-1 border-gray-200 rounded-lg p-3 shadow-lg bg-white hover:shadow-xl transition-shadow items-center">
+      <div className="flex gap-6 border-1 border-gray-200 rounded-lg p-3 shadow-lg bg-gray-100 hover:shadow-xl hover:border-2 hover:border-indigo-400 hover:-translate-y-0.5 transform transition-all duration-200 ease-in-out items-center">
         <div className="w-40 h-40">
           <DoughNutChart labels={['abc','bcd']} balances={balances} bankNames={bankNames}/>
         </div>

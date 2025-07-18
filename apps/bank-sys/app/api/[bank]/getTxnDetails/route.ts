@@ -3,10 +3,21 @@ import { NextRequest,NextResponse } from "next/server";
 import bcrypt from "bcrypt"
 import { Bank_name } from "@repo/db_banks/src/generated/prisma/client";
 import { authMediator, maskedAccountOutput } from "../../../utils/authMediator";
+import { request } from "http";
+import { SearchParams } from "next/dist/server/request/search-params";
+import { off } from "process";
 
 
 export async function POST(req:NextRequest,{params}:{params:{bank:string}}){
     const {bank}=params;
+    const { searchParams } = new URL(req.url);
+
+    const page=parseInt(searchParams.get("page")||"1");
+    const limit=parseInt(searchParams.get("limit")||"10");
+
+    const offset=(page-1)*limit;
+
+
     const bankName=bank.toLowerCase();
     const {access_token,user_email,acc_name}=await req.json();
     
@@ -25,11 +36,25 @@ export async function POST(req:NextRequest,{params}:{params:{bank:string}}){
             })
     
             // for now direct names but later when bank login is done masking+encyption of sensitive info
-            const getTransactionsPerAccount=await prisma_Bank.transactions.findMany({
-                where:{
-                    acc_id:findUserAccount?.acc_id,
-                }
-            })
+            const [getTransactionsPerAccount,totalTransactions]=await Promise.all([
+                prisma_Bank.transactions.findMany({
+                    where:{
+                        acc_id:findUserAccount?.acc_id,
+                    },
+                    skip:offset,
+                    take:limit,
+                    orderBy:{
+                        created_At:"desc"
+                    }
+                }),
+
+                prisma_Bank.transactions.count({
+                    where: {
+                      acc_id: findUserAccount?.acc_id,
+                    },
+                  }),
+
+            ])
     
             return NextResponse.json({done:true,msg:`Legible transactions found for the given account`,transactions:getTransactionsPerAccount},{status:200})
         }

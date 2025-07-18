@@ -9,28 +9,28 @@ datasource db {
 }
 
 model User {
-  id         Int        @id @default(autoincrement())
-  email      String?    @unique
-  username   String?
-  number     String     @unique
-  password   String
-  isVerified Boolean    @default(false)
-  accounts   Accounts[]
-  verification  Verification[]
-  auth_code     Auth_codes[]
-  tokens        Tokens[]
+  id           Int            @id @default(autoincrement())
+  email        String?        @unique
+  username     String?
+  number       String         @unique
+  password     String
+  isVerified   Boolean        @default(false)
+  accounts     Accounts[]
+  auth_code    Auth_codes[]
+  tokens       Tokens[]
+  verification Verification[]
 }
 
 model CommercialClients {
   id            Int      @id @default(autoincrement())
-  client_id     String  @unique
+  client_id     String   @unique
   assigned_date DateTime
   sharedSecret  String   @unique
   expiresAt     DateTime
   tokens        Tokens[]
-  @@index([client_id])
-  @@index([expiresAt]) // For cleanup
 
+  @@index([client_id])
+  @@index([expiresAt])
 }
 
 model Accounts {
@@ -46,69 +46,63 @@ model Accounts {
   created_At      DateTime
   user            User           @relation(fields: [user_id], references: [id])
   transactions    Transactions[]
-  
-  @@unique([user_id, bank, acc_name, type])
 
+  @@unique([user_id, bank, acc_name, type])
 }
 
 model Transactions {
-  txn_id     Int         @id @default(autoincrement())
-  acc_id     Int
-  status     Txn_status
-  type       Txn_type
-  created_At DateTime
-  channel    Txn_channel
-  category   Txn_Cat
-  counterPartyID  String   
+  txn_id           Int         @id @default(autoincrement())
+  acc_id           Int
+  status           Txn_status
+  type             Txn_type
+  created_At       DateTime
+  channel          Txn_channel
+  counterPartyID   String
   counterPartyType String
-
-  accounts   Accounts    @relation(fields: [acc_id], references: [acc_id])
+  category         Txn_Cat
+  Amount           Int?
+  accounts         Accounts    @relation(fields: [acc_id], references: [acc_id])
 }
 
-model Verification{
-  id          Int @id @default(autoincrement())
-  user_id     Int
-  otp         String
-  type        String
-  expiresAt   DateTime
-  user        User @relation(fields: [user_id], references: [id])
-
+model Verification {
+  id        Int      @id @default(autoincrement())
+  user_id   Int
+  otp       String
+  type      String
+  expiresAt DateTime
+  user      User     @relation(fields: [user_id], references: [id])
 }
 
-model Auth_codes{
-  id            Int @id @default(autoincrement())
-  code          String
-  user_id       Int
-  client_id     String
-  redirect_uri  String
-  createdAt     DateTime
-  expiresAt     DateTime
-  used          Boolean @default(false)
-  user          User @relation(fields: [user_id], references: [id])
+model Auth_codes {
+  id           Int      @id @default(autoincrement())
+  code         String
+  client_id    String
+  redirect_uri String
+  createdAt    DateTime
+  expiresAt    DateTime
+  used         Boolean  @default(false)
+  user_id      Int
+  user         User     @relation(fields: [user_id], references: [id])
 
   @@index([user_id, client_id])
-  @@index([code]) // For faster code lookups
-  @@index([expiresAt]) // For cleanup jobs
-
+  @@index([code])
+  @@index([expiresAt])
 }
 
-model Tokens{
-  id          Int @id @default(autoincrement())
-  user_id     Int
-  client_id   String
-  hashedToken String
-  bankName    String
-  created_At  DateTime @default(now())
-  expiresAt   DateTime
-  revoked     Boolean @default(false)
+model Tokens {
+  id                Int               @id @default(autoincrement())
+  user_id           Int
+  client_id         String
+  hashedToken       String
+  created_At        DateTime          @default(now())
+  expiresAt         DateTime
+  revoked           Boolean           @default(false)
+  bankName          String
+  commercialClients CommercialClients @relation(fields: [client_id], references: [client_id])
+  user              User              @relation(fields: [user_id], references: [id])
 
-  user        User @relation(fields: [user_id], references: [id])
-  commercialClients   CommercialClients @relation(fields:[client_id],references:[client_id])
-
-  @@index([user_id, client_id])
   @@unique([user_id, bankName])
-
-
+  @@index([user_id, client_id])
 }
 
 enum Txn_status {
@@ -154,7 +148,7 @@ enum Bank_name {
   ubi
 }
 
-enum Txn_Cat{
+enum Txn_Cat {
   Utilities
   Insurance
   Dine

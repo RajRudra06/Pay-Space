@@ -9,7 +9,7 @@ export default function SideBarItems(){
         
         <SideBarItem text="Transaction History" link="/transactions" logo={ <History/> }></SideBarItem>
 
-        <SideBarItem text="Tranfer funds" link="/transfer" logo={ <Repeat/> }></SideBarItem>
+        <SideBarItem text="Transfer funds" link="/transfer" logo={ <Repeat/> }></SideBarItem>
 
         <SideBarItem text="Connect Bank" link="/connect-bank" logo={ <Building/> }></SideBarItem>
         </>

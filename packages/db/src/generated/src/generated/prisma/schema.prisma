@@ -1,0 +1,137 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                Int               @id @default(autoincrement())
+  email             String?           @unique
+  username          String?
+  number            String            @unique
+  password          String
+  isVerified        Boolean           @default(false)
+  verifications     Verification[]
+  accounts          Accounts[]
+  linkedbankedtoken LinkedBankToken[]
+  defaultAccount    DefaultAccount[]
+}
+
+model Merchant {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  auth_type AuthType
+}
+
+model Verification {
+  id        Int      @id @default(autoincrement())
+  user_id   Int
+  otp       String
+  type      String
+  expiresAt DateTime
+  user      User     @relation(fields: [user_id], references: [id])
+}
+
+model DefaultAccount {
+  id         Int       @id @default(autoincrement())
+  user_id    Int
+  bankName   Bank_name
+  accOrgType Acc_type
+
+  user User @relation(fields: [user_id], references: [id])
+}
+
+enum AuthType {
+  Google
+  Github
+}
+
+enum Txn_status {
+  success
+  failed
+  pending
+}
+
+enum Acc_status {
+  active
+  closed
+  frozen
+}
+
+enum Txn_type {
+  credit
+  debit
+}
+
+enum Acc_type {
+  savings
+  checking
+  wallet
+  joint
+  business
+}
+
+enum Txn_channel {
+  upi
+  wallet
+  netbanking
+  card
+}
+
+enum Bank_name {
+  icici
+  sbi
+  hdfc
+  ubi
+}
+
+model Accounts {
+  acc_id          Int            @id @default(autoincrement())
+  user_id         Int
+  acc_name        String
+  acc_number      String
+  status          Acc_status
+  type            Acc_type
+  bank            Bank_name
+  balance         Decimal        @db.Decimal(12, 2)
+  connectedToMain Boolean
+  created_At      DateTime
+  user            User           @relation(fields: [user_id], references: [id])
+  transactions    Transactions[]
+}
+
+model LinkedBankToken {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  bankName    String
+  accessToken String
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, bankName])
+}
+
+model Transactions {
+  txn_id     Int         @id @default(autoincrement())
+  acc_id     Int
+  status     Txn_status
+  type       Txn_type
+  amount     Int
+  created_At DateTime
+  channel    Txn_channel
+  category   String
+  accounts   Accounts    @relation(fields: [acc_id], references: [acc_id])
+}

@@ -4,6 +4,7 @@ import Providers from "@pay_space/providers";
 import { Toaster } from "react-hot-toast";
 import NavBar from "./components/NavBar";
 import SessionLayout from "./components/sessionLayout";
+import { ModeToggle } from "./components/darkToggle";
 // 🧠 Import Fonts from next/font/google
 import {
   Inter,
@@ -85,7 +86,6 @@ export default function RootLayout({
         `}
       >
         <Toaster position="bottom-right" />
-        
         <Providers>
           <SessionLayout>
             {children}

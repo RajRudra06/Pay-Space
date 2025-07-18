@@ -26,21 +26,29 @@ export default function Home() {
   const { username, setUsername,setEmail,setNumber,bankCardCalled,setbankCardCalled} = useUserStore();
   
   async function getAllAccounts() {
-    const getAccounts=await axios.get(`${API_URL}/account-info`); 
+    const getAccounts=await axios.post(`${API_URL}/account-info`,{
+      bankNameBankTransaction:false
+    }); 
 
     if(getAccounts.data.done){  
         setUserBankAccounts(getAccounts.data.accounts)
         setTotalBalance(getAccounts.data.totalBalance)
         setbankCardCalled(true);
 
-        setDefaultAccount(getAccounts.data.accounts.find(
-          (account:Accounts) => account.accountType === getAccounts.data.defaultAccType
-        ));
+        if(!getAccounts.data.defaultAccType){
+          setDefaultAccount(getAccounts.data.accounts[0])
+        }
 
-        console.log("Fetcehed REsils",getAccounts.data.accounts.find(
-          (account:Accounts) => account.accountType === getAccounts.data.defaultAccType
-        ))
-
+        const defaultAcc = getAccounts.data.accounts.find(
+          (account: Accounts) => account.accountType === getAccounts.data.defaultAccType
+        );
+        
+        if (!defaultAcc) {
+          setDefaultAccount(getAccounts.data.accounts[0]);
+        } else {
+          setDefaultAccount(defaultAcc);
+        }
+        
     }
 
     else{
@@ -50,7 +58,6 @@ export default function Home() {
   }
 
   useEffect(() => {
-    console.log("🔁 useEffect triggered1 ", { session,  });
 
     if (session?.user) {
       const user = session.user as {
@@ -63,8 +70,6 @@ export default function Home() {
       setEmail(user.email)
       setNumber(user.number)
       getAllAccounts();
-
-      console.log(":::::::-0--->",)
 
     }
   }, []);
@@ -85,7 +90,7 @@ export default function Home() {
   return (
     <div>
       <IntroPage username={username} />
-      <div className="px-2 py-3 my-1 mx-5">
+      <div className="px-2 py-3 my-5 mx-5">
       <BankAccountCard bankNames={userBankAccounts?.map(account=>account.accountName) || []} numberOfAccount={userBankAccounts?.length||0} totalBalance={totalBalance||0} balances={userBankAccounts?.map(account=>account.accountBalance) || []}/>
       {/* @ts-ignore */}
       <RecentTransaction defaultAccount={defaultAccount} accounts={userBankAccounts||[]} />

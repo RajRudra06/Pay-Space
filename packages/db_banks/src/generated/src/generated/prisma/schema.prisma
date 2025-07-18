@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_DB_BANK")
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  email        String?        @unique
+  username     String?
+  number       String         @unique
+  password     String
+  isVerified   Boolean        @default(false)
+  accounts     Accounts[]
+  verification Verification[]
+  auth_code    Auth_codes[]
+  tokens       Tokens[]
+}
+
+model CommercialClients {
+  id            Int      @id @default(autoincrement())
+  client_id     String   @unique
+  assigned_date DateTime
+  sharedSecret  String   @unique
+  expiresAt     DateTime
+  tokens        Tokens[]
+
+  @@index([client_id])
+  @@index([expiresAt]) // For cleanup
+}
+
+model Accounts {
+  acc_id          Int            @id @default(autoincrement())
+  user_id         Int
+  acc_name        String
+  acc_number      String
+  status          Acc_status
+  type            Acc_type
+  bank            Bank_name
+  balance         Decimal        @db.Decimal(12, 2)
+  connectedToMain Boolean
+  created_At      DateTime
+  user            User           @relation(fields: [user_id], references: [id])
+  transactions    Transactions[]
+
+  @@unique([user_id, bank, acc_name, type])
+}
+
+model Transactions {
+  txn_id           Int         @id @default(autoincrement())
+  acc_id           Int
+  status           Txn_status
+  type             Txn_type
+  created_At       DateTime
+  channel          Txn_channel
+  amount           Int
+  category         Txn_Cat
+  counterPartyID   String
+  counterPartyType String
+
+  accounts Accounts @relation(fields: [acc_id], references: [acc_id])
+}
+
+model Verification {
+  id        Int      @id @default(autoincrement())
+  user_id   Int
+  otp       String
+  type      String
+  expiresAt DateTime
+  user      User     @relation(fields: [user_id], references: [id])
+}
+
+model Auth_codes {
+  id           Int      @id @default(autoincrement())
+  code         String
+  user_id      Int
+  client_id    String
+  redirect_uri String
+  createdAt    DateTime
+  expiresAt    DateTime
+  used         Boolean  @default(false)
+  user         User     @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, client_id])
+  @@index([code]) // For faster code lookups
+  @@index([expiresAt]) // For cleanup jobs
+}
+
+model Tokens {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  client_id   String
+  hashedToken String
+  bankName    String
+  created_At  DateTime @default(now())
+  expiresAt   DateTime
+  revoked     Boolean  @default(false)
+
+  user              User              @relation(fields: [user_id], references: [id])
+  commercialClients CommercialClients @relation(fields: [client_id], references: [client_id])
+
+  @@unique([user_id, bankName])
+  @@index([user_id, client_id])
+}
+
+enum Txn_status {
+  success
+  failed
+  pending
+}
+
+enum Acc_status {
+  active
+  closed
+  frozen
+}
+
+enum Txn_type {
+  credit
+  debit
+}
+
+enum Acc_type {
+  savings
+  checking
+  wallet
+  joint
+  business
+}
+
+enum Txn_channel {
+  upi
+  wallet
+  netbanking
+  card
+  cheque
+  cheque_DD
+  RTGS
+  NEFT
+}
+
+enum Bank_name {
+  icici
+  sbi
+  hdfc
+  ubi
+}
+
+enum Txn_Cat {
+  Utilities
+  Insurance
+  Dine
+  Shopping
+  Entertainment
+  Travel
+  Load_EMI
+  Savings_Transfers
+  Investments
+  Education
+  Health
+  Income
+  Taxes
+}

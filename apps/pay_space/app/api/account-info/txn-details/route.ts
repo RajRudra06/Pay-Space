@@ -32,7 +32,7 @@ export async function POST(req:NextRequest){
             },{status:401})
         }
 
-        const bankName=bankAcc.toUpperCase();
+        const bankName=bankAcc?.toUpperCase();
 
         const doesUserLinkedAccountExists=await prisma.linkedBankToken.findFirst({
             where:{

@@ -1,38 +1,38 @@
 import { Landmark } from "lucide-react"
 
-export default function DefaultCard(props:{bankname:string,balance:number,accountType:string}){
+export default function DefaultCard(props: { bankname: string, balance: number, accountType: string }) {
 
     const formatBalance = (balance: number) => {
         return new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'INR'
+            style: 'currency',
+            currency: 'INR'
         }).format(balance);
-      };
+    };
 
-    return(
+    return (
         <>
-        <div className="flex justify-between bg-gray-100 p-3 rounded-lg m-6 mt-8 mb-8 p-5">
-        <div className="flex justify-center items-center gap-6">
-            
-            <div className="w-10 h-10 bg-indigo-200 rounded-full flex items-center justify-center">
-                <Landmark className="w-5 h-5 text-indigo-700" />
-            </div>
-            <div className="text-md text-gray-700 font-semibold flex flex-col">
-               <div>
-                    {props.bankname}
-                </div> 
-                <div className="font-bold text-md text-indigo-700">
-                    {formatBalance(props.balance)}
-                </div> 
-            </div>
-        </div>
+            <div className="flex justify-between bg-gradient-to-r from-slate-100 to-slate-50 p-6 rounded-xl m-6 mt-8 mb-8 shadow-lg border border-slate-200 hover:shadow-xl hover:border-indigo-400 hover:-translate-y-0.5 transform transition-all duration-200 ease-in-out">
+                <div className="flex justify-center items-center gap-6">
 
-        <div className="rounded-lg bg-indigo-200 text-blue-700 w-15 h-7 m-1 text-sm p-1">
-            {props.accountType}
-        </div>
-        </div>
-       
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center shadow-md">
+                        <Landmark className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-md text-slate-800 font-semibold flex flex-col">
+                        <div className="text-lg font-bold">
+                            {props.bankname}
+                        </div>
+                        <div className="font-bold text-xl text-emerald-700">
+                            {formatBalance(props.balance)}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="rounded-lg bg-gradient-to-r from-slate-600 to-slate-700 text-white px-4 w-15 h-9 text-md font-medium shadow-md flex items-center justify-center">
+    {props.accountType}
+</div>
+            </div>
+
         </>
-        
+
     )
 }
