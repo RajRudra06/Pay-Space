@@ -13,7 +13,7 @@ export async function POST(req:NextRequest,{params}:{params:{bank:string}}){
     const { searchParams } = new URL(req.url);
 
     const page=parseInt(searchParams.get("page")||"1");
-    const limit=parseInt(searchParams.get("limit")||"10");
+    const limit=parseInt(searchParams.get("limit")||"7");
 
     const offset=(page-1)*limit;
 
@@ -56,9 +56,22 @@ export async function POST(req:NextRequest,{params}:{params:{bank:string}}){
 
             ])
     
-            return NextResponse.json({done:true,msg:`Legible transactions found for the given account`,transactions:getTransactionsPerAccount},{status:200})
-        }
-    
+            return NextResponse.json(
+                {
+                  done: true,
+                  msg: "Legible transactions found for the given account",
+                  transactions: getTransactionsPerAccount,
+                  meta: {
+                    page,
+                    limit,
+                    totalTransactions,
+                    totalPages: Math.ceil(totalTransactions / limit),
+                  },
+                },
+                { status: 200 }
+              );
+            }
+            
         else{
             return NextResponse.json({done:false,msg:`Error occured--->${res.msg}`},{status:200})
         }
