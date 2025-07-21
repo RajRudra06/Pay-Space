@@ -10,6 +10,8 @@ import { toast } from "react-hot-toast";
 import BankDropdown from "../components/bankDropdown";
 import { BankId, } from "../lib/banksMetaData";
 import Loading from "../loading";
+import TransactionTable from "../components/transactionTable";
+import PaginationControls from "../components/paginationControls";
 
 export default function TransactionHistory(){
 
@@ -19,7 +21,13 @@ export default function TransactionHistory(){
     const [totalBalance,setTotalBalance]=useState(0);
     const [connectedBanks, setConnectedBanks] = useState<BankId[]>([]);
     const [selectedBankId, setSelectedBankId] = useState<BankId | null>(null);
-    const [bankSwitchLoading, setBankSwitchLoading] = useState(false); // ⏳
+    const [bankSwitchLoading, setBankSwitchLoading] = useState(false); 
+    const [cuurBankId,setCurrBankId]=useState<BankId | null>("pay_space");
+    const [transactions,setTransactions]=useState([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [page, setPage] = useState(1);
+
+
 
     const API_URL=process.env.NEXT_PUBLIC_API_URL_DEV
 
@@ -38,42 +46,70 @@ export default function TransactionHistory(){
     }
 
     async function retrieveConnectedBankAccounts(bankId: BankId) {
-
-        try{
-            setBankSwitchLoading(true); 
-
-            const getAccounts = await axios.post(`${API_URL}/account-info`, {
-              bankNameBankTransaction: bankId,
-            });
-          
-            if (getAccounts.data.done) {
-              const accounts: Accounts[] = getAccounts.data.accounts;
-              setUserBankAccounts(accounts);
-          
-              const defaultAccType = getAccounts.data.defaultAccType;
-              const defaultAcc = accounts.find(
-                (acc) => acc.accountType === defaultAccType
-              );
-          
-              setDefaultAccount(defaultAcc ?? accounts[0]); 
-              setBankSwitchLoading(false); 
+        setBankSwitchLoading(true);
+        setCurrBankId(bankId);
     
-            } 
-        }
-        catch(err){
+        try {
+           if(bankId!=="pay_space") {const getAccounts = await axios.post(`${API_URL}/account-info`, {
+                bankNameBankTransaction: bankId,
+            });
+    
+            if (getAccounts.data.done) {
+                const accounts: Accounts[] = getAccounts.data.accounts;
+                setUserBankAccounts(accounts);
+    
+                const defaultAccType = getAccounts.data.defaultAccType;
+                const defaultAcc = accounts.find(
+                    (acc) => acc.accountType === defaultAccType
+                );
+    
+                setDefaultAccount(defaultAcc ?? accounts[0]);
+            }}
+        } catch (err) {
             toast.error("Unknown error occured, Please try again later");
+        } finally {
+            setBankSwitchLoading(false); 
         }
-       
-
     }
+
+    async function getPaySpaceTransactions(currentPage=1) {
+        setBankSwitchLoading(true);
+        setCurrBankId("pay_space");
+
+        try {
+            const getTransactions = await axios.post(`${API_URL}/account-info/txn-details/pay-space_txn`,{
+                page:currentPage,
+                limit:10
+            });
+    
+            if (getTransactions.data.done) {
+                setTransactions(getTransactions.data.transactions);
+                setTotalPages(getTransactions.data.meta.totalPages);
+                setPage(getTransactions.data.meta.page);
+    
+            }
+
+            else if(!getTransactions.data.done){
+                toast.error("error-",getTransactions.data.msg);
+            }
+        } catch (err) {
+            toast.error("Unknown error occured, Please try again later");
+        } finally {
+            setBankSwitchLoading(false); 
+        }
+    }
+    
 
     useEffect(()=>{
         retrieveConnectedBanks()
     },[])
 
     useEffect(() => {
-        if (selectedBankId) {
-          retrieveConnectedBankAccounts(selectedBankId);
+        if (selectedBankId!=="pay_space") {
+          retrieveConnectedBankAccounts(selectedBankId!);
+        }
+        else{
+            getPaySpaceTransactions();
         }
     }, [selectedBankId]);
 
@@ -96,12 +132,40 @@ export default function TransactionHistory(){
                     />
                 ):""}
             </div>
-
-            {bankSwitchLoading ? (
-                <Loading />
+                        {bankSwitchLoading ? (
+            <Loading />
             ) : (
-                <RecentBankTransactions bank={selectedBankId} defaultAccount={defaultAccount!} accounts={userBankAccounts||[]} />
-            )}
+            cuurBankId !== "pay_space" ? (
+                <RecentBankTransactions
+                bank={selectedBankId}
+                defaultAccount={defaultAccount!}
+                accounts={userBankAccounts || []}
+                />
+            ) : <div>
+                <div>
+                    </div>
+                    <div>
+                    </div> 
+                    
+                    <div className="mt-12 px-8">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold text-slate-800">
+          Transactions via Pay Space
+          </h2>
+          <p className="text-sm text-slate-500">
+          All transfers you’ve initiated directly through Pay Space.
+          </p>
+        </div>
+      </div>
+                    <TransactionTable isLoading={bankSwitchLoading} data={transactions} />
+
+                        {transactions.length>=1?<PaginationControls 
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={(newPage) => getPaySpaceTransactions(newPage)}
+            />:null}</div>
+                        )}
+
 
             </>
         </ProtectedRouting>

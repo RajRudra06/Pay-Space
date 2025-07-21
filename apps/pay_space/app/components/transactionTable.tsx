@@ -16,7 +16,7 @@ export default function TransactionTable({ data, isLoading }: { data: Transactio
   }
 
   return (
-    <div className="overflow-x-auto mt-6 shadow-xl rounded-2xl bg-white border border-slate-200">
+    <div className="overflow-x-auto mt-6 shadow-xl rounded-2xl bg-white border border-slate-200 scrollbar-hide">
       <table className="min-w-full text-sm">
         <thead className="bg-gray-600 text-white">
           <tr>
@@ -32,7 +32,7 @@ export default function TransactionTable({ data, isLoading }: { data: Transactio
           {data.map((txn, i) => (
             <tr 
               key={i}
-              className={`transition-all duration-200 hover:scale-[1.01] hover:shadow-md ${
+              className={`transition-all duration-200 hover:shadow-md ${
                 txn.type === "credit" 
                   ? "bg-gradient-to-r from-emerald-50 to-green-50 hover:from-emerald-100 hover:to-green-100 border-l-4 border-emerald-400" 
                   : "bg-gradient-to-r from-rose-50 to-red-50 hover:from-rose-100 hover:to-red-100 border-l-4 border-rose-400"
@@ -100,6 +100,16 @@ export default function TransactionTable({ data, isLoading }: { data: Transactio
           ))}
         </tbody>
       </table>
+      
+      <style jsx>{`
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 }

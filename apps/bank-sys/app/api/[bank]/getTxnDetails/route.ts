@@ -3,9 +3,7 @@ import { NextRequest,NextResponse } from "next/server";
 import bcrypt from "bcrypt"
 import { Bank_name } from "@repo/db_banks/src/generated/prisma/client";
 import { authMediator, maskedAccountOutput } from "../../../utils/authMediator";
-import { request } from "http";
-import { SearchParams } from "next/dist/server/request/search-params";
-import { off } from "process";
+
 
 
 export async function POST(req:NextRequest,{params}:{params:{bank:string}}){
@@ -62,16 +60,16 @@ export async function POST(req:NextRequest,{params}:{params:{bank:string}}){
                   msg: "Legible transactions found for the given account",
                   transactions: getTransactionsPerAccount,
                   meta: {
-                    page,
-                    limit,
-                    totalTransactions,
+                    page:page,
+                    limit:limit,
+                    totalTransactions:totalTransactions,
                     totalPages: Math.ceil(totalTransactions / limit),
                   },
                 },
                 { status: 200 }
               );
             }
-            
+
         else{
             return NextResponse.json({done:false,msg:`Error occured--->${res.msg}`},{status:200})
         }

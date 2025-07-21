@@ -8,6 +8,7 @@ import axios from "axios"
 import { useTransactionStore } from "@repo/store"
 import { toast } from "react-hot-toast"
 import Loading from "../loading"
+import PaginationControls from "./paginationControls"
 
 const API_URL=process.env.NEXT_PUBLIC_API_URL_DEV;
 
@@ -16,7 +17,8 @@ export default function TransactionsTabs({accounts, defaultAccount}:{accounts:Ac
 
   const [transactions2, setTransactions2] = useState<any[]>([])
   const [isLoading,setIsLoading]=useState(false);
-
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const {setTransactions,transactions}=useTransactionStore();
 
   const [activeTab, setActiveTab] = useState(() => {
@@ -44,6 +46,8 @@ export default function TransactionsTabs({accounts, defaultAccount}:{accounts:Ac
 
     }
     fetchTransactions();
+    setPage(1);
+
   }, [activeTab])
 
   useEffect(() => {
@@ -53,7 +57,7 @@ export default function TransactionsTabs({accounts, defaultAccount}:{accounts:Ac
   }, [accounts]);
   
   
-  async function fetchTransactions() {
+  async function fetchTransactions(currentPage = 1) {
 
     if (!activeAccount) {
       console.log("No active account found, skipping API call");
@@ -65,13 +69,16 @@ export default function TransactionsTabs({accounts, defaultAccount}:{accounts:Ac
 
       const getTxnForAccount=await axios.post(`${API_URL}/account-info/txn-details`,{
           acc_name:activeAccount?.accountName,
-          bankAcc:activeAccount?.accountBank
+          bankAcc:activeAccount?.accountBank,
+          page:currentPage,
+          limit:7
       })
 
       if(getTxnForAccount.data.done){
         setTransactions(getTxnForAccount.data.txns)
         setTransactions2(getTxnForAccount.data.txns)
-
+        setTotalPages(getTxnForAccount.data.meta.totalPages)
+        setPage(getTxnForAccount.data.meta.page);
       }
 
       setIsLoading(false)
@@ -128,7 +135,17 @@ export default function TransactionsTabs({accounts, defaultAccount}:{accounts:Ac
         {isLoading ? (
                 <Loading />
             ) : (
-              <TransactionTable isLoading={isLoading} data={transactions} />
+              <>
+               <TransactionTable isLoading={isLoading} data={transactions} />
+
+               {transactions.length>=1&&transactions2.length>=1?<PaginationControls 
+  currentPage={page}
+  totalPages={totalPages}
+  onPageChange={(newPage) => fetchTransactions(newPage)}
+/>:null}
+
+              </>
+
 
             )}
         </TabsContent>

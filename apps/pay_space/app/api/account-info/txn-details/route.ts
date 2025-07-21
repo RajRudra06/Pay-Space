@@ -11,7 +11,11 @@ export async function POST(req:NextRequest){
     try{
 
         const session = await getServerSession(authOptions);
-        const {acc_name,bankAcc}=await req.json();
+        const body = await req.json(); 
+
+        const { acc_name, bankAcc } = body;
+        const page = Number.isInteger(body.page) ? body.page : parseInt(body.page) || 1;
+        const limit = Number.isInteger(body.limit) ? body.limit : parseInt(body.limit) || 10;
 
         if(!session){
             return NextResponse.json({
@@ -50,7 +54,7 @@ export async function POST(req:NextRequest){
             },{status:401})
         }
 
-        const bankTxnList=await fetch(`${BANK_API_URL}/${bankName.toLowerCase()}/getTxnDetails`,{method:'POST',
+        const bankTxnList=await fetch(`${BANK_API_URL}/${bankName.toLowerCase()}/getTxnDetails?page=${page}&limit=${limit}`,{method:'POST',
                 headers:{
                     'Content-Type':'application/json',
                     'Authorization':`Basic ${basicAuth}`
@@ -62,7 +66,7 @@ export async function POST(req:NextRequest){
                 })
                 
         })
-        console.log("---->poppeer---->",bankTxnList)
+        console.log("---->",bankTxnList)
 
 
         const bankTxnListRes=await bankTxnList.json();
@@ -73,7 +77,7 @@ export async function POST(req:NextRequest){
         
         if(bankTxnListRes.done){
             return NextResponse.json({
-                msg:`Legible txns found`,done:true,txns:bankTxnListRes.transactions},{status:200})
+                msg:`Legible txns found`,done:true,txns:bankTxnListRes.transactions,meta:bankTxnListRes.meta},{status:200})
         }
 
         return NextResponse.json({

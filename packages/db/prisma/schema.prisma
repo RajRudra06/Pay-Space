@@ -25,6 +25,7 @@ model User {
   accounts       Accounts[]   
   linkedbankedtoken LinkedBankToken[] 
   defaultAccount    DefaultAccount[]
+  transactions      Transactions[]
 
 }
 
@@ -90,6 +91,10 @@ enum Txn_channel{
   wallet
   netbanking
   card
+  cheque
+  cheque_DD
+  RTGS
+  NEFT
 }
 
 enum Bank_name{
@@ -111,7 +116,6 @@ model Accounts {
   connectedToMain Boolean
   created_At  DateTime
   user        User @relation(fields: [user_id], references: [id])
-  transactions Transactions[]
 }
 
 model LinkedBankToken{
@@ -130,13 +134,18 @@ model LinkedBankToken{
 
 model Transactions {
   txn_id      Int @id @default(autoincrement())
-  acc_id      Int 
+  bank        Bank_name
+  user_id     Int
+  acc_name    String 
   status      Txn_status
   type        Txn_type
-  amount     Int
+  counterPartyID   String @default("null")
+  counterPartyType String @default("null")
+  Amount      Int @default(0)
   created_At  DateTime
   channel     Txn_channel
   category    String
-  accounts    Accounts @relation(fields:[acc_id],references:[acc_id])
+  user        User @relation(fields: [user_id], references: [id])
+
 }
 
