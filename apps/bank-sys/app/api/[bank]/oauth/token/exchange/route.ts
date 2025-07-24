@@ -18,7 +18,7 @@ export async function POST(req:NextRequest,{params}:{params:{bank:string}}){
     const grantType = paramsBody.get("grant_type");
     const user_email=paramsBody.get("user_email")
 
-    const { bank } = params;
+    const { bank } = await params;
     const bankString=bank.toLowerCase();
 
     try{
@@ -121,6 +121,7 @@ export async function POST(req:NextRequest,{params}:{params:{bank:string}}){
         return NextResponse.json({ msg: `Code verified and token sent to ${client_id}`,done:true,token:rawGeneratedToken },{status:200});
 
     }catch(err){
+        console.log("Erroor at api/bank/oauth/token/echcagbe--->",err);
         return NextResponse.json({ 
             error: "server_error", 
             error_description: "Internal server error on token page" 

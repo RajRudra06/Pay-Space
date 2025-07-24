@@ -11,13 +11,15 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@repo/ui": "*",
     "@repo/db_banks": "*",
-    "pay_space":"*",
+    "@repo/ui": "*",
+    "lucide-react": "^0.525.0",
     "next": "^15.3.0",
+    "nodemailer": "^7.0.3",
+    "pay_space": "*",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "nodemailer": "^7.0.3"
+    "react-hot-toast": "^2.5.2"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",

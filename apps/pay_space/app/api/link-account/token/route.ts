@@ -67,9 +67,12 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({
                     msg:`Token created and stored on ${PAY_SPACE_ID}`,done:true
                 },{status:200})
+
           }
 
           else{
+            console.log("error at pay/api/link-account/token",excahngeTokenRes)
+
             return NextResponse.json({
                 msg:`Token exchange error occured, try again`,done:false,msgg:excahngeTokenRes.msg
             },{status:401})

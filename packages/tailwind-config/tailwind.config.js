@@ -1,8 +1,15 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "../../apps/**/*.{js,ts,jsx,tsx,mdx}",
+    // Current app
+    "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
+    
+    // Only include specific shared packages if needed
     "../../packages/ui/**/*.{js,ts,jsx,tsx,mdx}",
+    // Don't use "../**/*" - it's too broad
   ],
   theme: {
     extend: {
