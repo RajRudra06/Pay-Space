@@ -9,16 +9,22 @@ datasource db {
 }
 
 model User {
-  id           Int            @id @default(autoincrement())
-  email        String?        @unique
-  username     String?
-  number       String         @unique
-  password     String
-  isVerified   Boolean        @default(false)
-  accounts     Accounts[]
-  auth_code    Auth_codes[]
-  tokens       Tokens[]
-  verification Verification[]
+  id              Int               @id @default(autoincrement())
+  email           String?           
+  username        String?
+  number          String            
+  password        String
+  DOB             DateTime  @default(now())
+  bankName        Bank_name         @default(notdefined)
+  isVerified      Boolean           @default(false)
+  accounts        Accounts[]
+  accountsDetails AccountsDetails[]
+  auth_code       Auth_codes[]
+  tokens          Tokens[]
+  verification    Verification[]
+
+  @@unique([number, bankName])
+  @@unique([email, bankName])
 }
 
 model CommercialClients {
@@ -33,18 +39,48 @@ model CommercialClients {
   @@index([expiresAt])
 }
 
+model AccountsDetails {
+  acc_det_id       Int        @id @default(autoincrement())
+  acc_id           Int
+  user_id          Int
+  firstName        String
+  lastName         String
+  DOB              DateTime
+  Gender           gender
+  fatherName       String
+  motherName       String
+  aadhaarNumber    String     @db.Char(12)
+  panNumber        String     @db.Char(10)
+  email            String
+  phoneNumber      String     @db.Char(10)
+  address          String
+  City             String
+  State            String
+  pincode          String     @db.Char(6)
+  Occupation       occupation
+  monthlyIncome    String
+  nomineeFirstname String
+  nomineeLastname  String
+  relationship     String
+  accounts         Accounts   @relation(fields: [acc_id], references: [acc_id])
+  user             User       @relation(fields: [user_id], references: [id])
+}
+
 model Accounts {
-  acc_id          Int            @id @default(autoincrement())
+  acc_id          Int               @id @default(autoincrement())
   user_id         Int
   acc_name        String
   acc_number      String
   status          Acc_status
+  hold_amount     Decimal  @default(0)
   type            Acc_type
   bank            Bank_name
-  balance         Decimal        @db.Decimal(12, 2)
+  ifscCode        String @db.VarChar(11) @default("ABCDE123FGH")
+  balance         Decimal           @db.Decimal(12, 2) @default(1500.00)
   connectedToMain Boolean
   created_At      DateTime
-  user            User           @relation(fields: [user_id], references: [id])
+  user            User              @relation(fields: [user_id], references: [id])
+  accountsDetails AccountsDetails[]
   transactions    Transactions[]
 
   @@unique([user_id, bank, acc_name, type])
@@ -53,10 +89,12 @@ model Accounts {
 model Transactions {
   txn_id           Int         @id @default(autoincrement())
   acc_id           Int
+  txnRef           String       @default("notdefined")
   status           Txn_status
   type             Txn_type
-  created_At       DateTime
-  channel          Txn_channel
+  created_At       DateTime 
+  process_At       DateTime      @default(now())
+  channel          Txn_channel  
   counterPartyID   String
   counterPartyType String
   category         Txn_Cat
@@ -105,6 +143,22 @@ model Tokens {
   @@index([user_id, client_id])
 }
 
+enum gender {
+  male
+  female
+  other
+}
+
+enum occupation {
+  Student
+  Employee
+  SelfEmployed
+  Business
+  Retired
+  Homemaker
+  Other
+}
+
 enum Txn_status {
   success
   failed
@@ -139,6 +193,7 @@ enum Txn_channel {
   cheque_DD
   RTGS
   NEFT
+  IMPS
 }
 
 enum Bank_name {
@@ -146,6 +201,7 @@ enum Bank_name {
   sbi
   hdfc
   ubi
+  notdefined
 }
 
 enum Txn_Cat {

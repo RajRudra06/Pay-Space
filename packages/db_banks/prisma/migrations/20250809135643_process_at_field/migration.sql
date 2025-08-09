@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Transactions" ADD COLUMN     "process_At" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

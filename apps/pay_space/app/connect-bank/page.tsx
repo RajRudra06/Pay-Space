@@ -140,6 +140,23 @@ export default function ConnectBank(){
                        },1000)                    
 
                 }
+                else if(event.data.status==="startbanking"){   
+                  setCodeSent(true);
+                  codeSentRef.current = true;
+
+                  setFailedMsg({submessage:'Banking Initiated', message:'User creating account.'})
+
+
+                  setTimeout(()=>{
+
+                          setShowPopup(true)
+                          setIsConnecting(false)
+                          setDisable(false)
+                          setSelectedBank('')
+                      
+                     },1000)                    
+
+              }
              }
 
              );

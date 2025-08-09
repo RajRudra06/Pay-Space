@@ -8,26 +8,34 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint --max-warnings 0",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "start-worker": "npx tsx /Users/rudrarajpurohit/Desktop/paytm/apps/bank-sys/app/workers/transferWorker.ts"
   },
   "dependencies": {
     "@repo/db_banks": "*",
     "@repo/ui": "*",
+    "bullmq": "^5.56.9",
+    "crypto": "^1.0.1",
+    "ioredis": "^5.7.0",
     "lucide-react": "^0.525.0",
     "next": "^15.3.0",
+    "next-auth": "^4.24.11",
     "nodemailer": "^7.0.3",
     "pay_space": "*",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-hot-toast": "^2.5.2"
+    "react-hot-toast": "^2.5.2",
+    "ts-node": "^10.9.2"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/typescript-config": "*",
+    "@types/minimatch": "^6.0.0",
     "@types/node": "^22.15.3",
     "@types/react": "19.1.0",
     "@types/react-dom": "19.1.1",
     "eslint": "^9.28.0",
+    "tsx": "^4.20.3",
     "typescript": "5.8.2"
   }
 }

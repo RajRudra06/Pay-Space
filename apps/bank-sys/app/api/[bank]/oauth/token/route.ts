@@ -26,9 +26,11 @@ export async function POST(req: NextRequest,{params}:{params:{bank:string}}) {
         const doesUserExists=await prisma.user.findFirst({
             where:{
                 email:user_email,
+                bankName:bankName as Bank_name
             }
         })
 
+        console.log("checking if user exists",doesUserExists,"bank-->",bankName)
         // does user hava account ?
         const doesUserAccountExists=await prisma.accounts.findFirst({
             where:{
@@ -36,6 +38,8 @@ export async function POST(req: NextRequest,{params}:{params:{bank:string}}) {
                 bank:bankName as Bank_name
             }
         })
+        console.log("checking if user account exists",doesUserAccountExists,"bank-->",bankName)
+
 
         if(doesCommercialClientExists&&doesUserExists&&doesUserAccountExists){
             // send otp 

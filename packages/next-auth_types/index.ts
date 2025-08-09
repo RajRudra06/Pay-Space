@@ -3,6 +3,7 @@ export interface CustomUser {
     email: string;
     username: string;
     number: string;
+    loggedBank:string
 }
 
 export interface CustomToken {
@@ -11,6 +12,7 @@ export interface CustomToken {
     username?: string;
     number?: string;
     role?: string;
+    loggedBank?:string
 }
 
 export interface CustomSession {
@@ -22,6 +24,7 @@ export interface CustomSession {
         role?: string;
         name?: string | null;
         image?: string | null;
+        loggedBank:string
     };
     expires: string;
 }

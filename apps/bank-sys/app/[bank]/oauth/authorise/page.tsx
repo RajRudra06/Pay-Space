@@ -16,6 +16,7 @@ export default function AuthorizePage() {
 
   const API_URL=process.env.NEXT_PUBLIC_API_URL
   const PAY_SPACE_URL_CALLBACK=process.env.NEXT_PUBLIC_PAY_SPACE_URL
+  const NEXT_PUBLIC_BANK_SYS_URL=process.env.NEXT_PUBLIC_BANK_SYS_URL
   
   // Consolidated status state - replaces isVerified, isValid, and msg
   const [status, setStatus] = useState({
@@ -197,6 +198,14 @@ export default function AuthorizePage() {
     );
   }
 
+  function startBanking(){
+    setfailedMsg("startbanking")
+    const targetUrl = `${NEXT_PUBLIC_BANK_SYS_URL}/${bankName}/signin/?user_email=${userEmail}&client_id=${clientID}`
+    window.opener.postMessage({ status: "startbanking" }, `${PAY_SPACE_URL_CALLBACK}`);  // Use the string directly
+    window.open(targetUrl, '_blank'); 
+    window.close();
+}
+
   if (status.state === 'error') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
@@ -242,7 +251,7 @@ export default function AuthorizePage() {
               {/* Two buttons side by side */}
               <div className="flex gap-3">
                 <button 
-                  onClick={() => alert("Going to bank site")}
+                  onClick={() => startBanking()}
                   className="flex-1 py-3 px-6 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg"
                 >
                   Start Banking

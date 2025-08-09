@@ -1,11 +1,11 @@
 {
   "extends": "@repo/typescript-config/nextjs.json",
   "compilerOptions": {
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ]
+    "module": "ESNext",            // important: output ES modules
+    "target": "ES2020",            // or later ES version supporting top-level await, etc.
+    "outDir": "dist",              // or wherever you want compiled files
+    "esModuleInterop": true,       // good to keep true for compat
+    "moduleResolution": "node"
   },
   "include": [
     "**/*.ts",
@@ -13,7 +13,7 @@
     "next-env.d.ts",
     "next.config.js",
     ".next/types/**/*.ts"
-  ],
+, "app/workers/transferWorker.js"  ],
   "exclude": [
     "node_modules"
   ]

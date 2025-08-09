@@ -86,18 +86,21 @@ export default function SignUp() {
             if(userDetails.password==userDetails.confirmpassword){ 
               try {
                 setDisable(false);
-                toast.success("Signing you up...")
+                const laodingSignuptoast=toast.loading("Signing you up...")
 
                 const response = await axios.post<response>(`${API_URL}/user/signup`,{email:userDetails.email,username:userDetails.username,password:userDetails.password,number:userDetails.number},{headers: {
                   "Content-Type": "application/json",
                 }}); 
                 if(response.data.done){
+                  toast.dismiss(laodingSignuptoast)
                   toast.success("Sign Up Successful 🎉, Verification Required..")
                   router.push("/verification")
                   setUserDetails(baseValue)
                 }
                 else if(!response.data.done){
                   toast.error(`Error Signing up,${response.data.msg}`)
+                  toast.dismiss(laodingSignuptoast)
+
                 }
                 else if(response.data.done==-1){
                   throw new Error("To catch block");

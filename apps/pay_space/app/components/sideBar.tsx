@@ -161,7 +161,7 @@ export default function SideBar({ children }: { children: ReactNode }) {
               
               {/* Divider */}
               <div className="h-px bg-gray-200 my-1"></div>
-              
+            
               {/* Logout */}
               <div className="py-1">
                 <button 

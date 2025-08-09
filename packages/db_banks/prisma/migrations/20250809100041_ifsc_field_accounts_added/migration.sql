@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Accounts" ADD COLUMN     "ifscCode" VARCHAR(11) NOT NULL DEFAULT 'ABCDE123FGH';
