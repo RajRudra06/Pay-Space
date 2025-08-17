@@ -52,3 +52,42 @@ export function ProcessTime(transferMethod: Txn_channel) {
         }
     }
 }
+
+export type KYCType = 'EKYC' | 'PHYSICAL' | 'VIDEO' | 'MANUAL_REVIEW';
+
+export function KYCProcessTime(kycType: KYCType) {
+    const now = new Date();
+
+    if (kycType === 'EKYC') {
+        // Fast automated check — 30s to 2 mins
+        return new Date(
+            Date.now() + Math.floor(Math.random() * (120000 - 30000 + 1)) + 30000
+        );
+    }
+
+    if (kycType === 'VIDEO') {
+        // Simulate waiting for agent — 5 to 15 mins
+        return new Date(
+            Date.now() + Math.floor(Math.random() * (900000 - 300000 + 1)) + 300000
+        );
+    }
+
+    if (kycType === 'PHYSICAL') {
+        // Simulate document courier + review — 1 to 3 days
+        const delayDays = Math.floor(Math.random() * (3 - 1 + 1)) + 1;
+        return new Date(
+            now.getTime() + delayDays * 24 * 60 * 60 * 1000
+        );
+    }
+
+    if (kycType === 'MANUAL_REVIEW') {
+        // Complex case / fraud suspicion — 2 to 5 days
+        const delayDays = Math.floor(Math.random() * (5 - 2 + 1)) + 2;
+        return new Date(
+            now.getTime() + delayDays * 24 * 60 * 60 * 1000
+        );
+    }
+
+    // Default fallback — instant for testing
+    return now;
+}

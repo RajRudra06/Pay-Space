@@ -11,10 +11,10 @@ import { transporter } from "pay_space/app/lib/email_transporter";
 import { sendMail } from "pay_space/app/lib/send_mail";
 import { SentMessageInfo } from "nodemailer";
 
-export async function GET(req:NextRequest,{params}:{
+export async function POST(req:NextRequest,{params}:{
     params:{bank:Bank_name}
 }){
-    
+    const {usageType}=await req.json();
     const session = await getServerSession(authOptionsBankSys);
     const bankNameUpperCase = params.bank;
     const bankName=bankNameUpperCase.toLowerCase();
@@ -40,7 +40,8 @@ export async function GET(req:NextRequest,{params}:{
         const prevOTP=await prisma_Bank.verification.deleteMany({
             where: {
               user_id: doesUserExist!.id,
-              type: "email"
+              type: "email",
+              usage:usageType
             },
           });
 
@@ -57,7 +58,8 @@ export async function GET(req:NextRequest,{params}:{
                 user_id:doesUserExist!.id,
                 otp:hashedOTP,
                 type:"email",
-                expiresAt:expiresAt
+                expiresAt:expiresAt,
+                usage:usageType
             }
           })
 

@@ -16,7 +16,10 @@ export async function POST(req:NextRequest,{params}:{
     const session = await getServerSession(authOptionsBankSys);
     const bankNameUpperCase = params.bank;
     const bankName=bankNameUpperCase.toLowerCase();
-    const { beneficiaryName,beneficiaryAccNumber,beneficiaryBank,beneficiaryIFSC,amountToTransfer,transferMethod,purpose,senderAccountName,beneficiaryEmail,OTP } = await req.json();
+    const { beneficiaryName,beneficiaryAccNumber,beneficiaryBank,beneficiaryIFSC,amountToTransferRaw,transferMethod,purpose,senderAccountName,beneficiaryEmail,OTP } = await req.json();
+
+    const amountToTransfer = parseInt(amountToTransferRaw, 10);
+
 
     if(!session){
         return NextResponse.json(
@@ -60,7 +63,7 @@ export async function POST(req:NextRequest,{params}:{
         
         const doesBeneficiaryExist=await prisma_Bank.user.findFirst({
             where:{
-                bankName:beneficiaryBank as Bank_name,
+                bankName:beneficiaryBank.toLowerCase() as Bank_name,
                 username:beneficiaryName,
                 email:beneficiaryEmail
             }
@@ -77,7 +80,7 @@ export async function POST(req:NextRequest,{params}:{
             where:{
                 user_id:doesBeneficiaryExist!.id,
                 acc_number:beneficiaryAccNumber,
-                bank:beneficiaryBank as Bank_name,
+                bank:beneficiaryBank.toLowerCase() as Bank_name,
                 ifscCode:beneficiaryIFSC
             }
         })
@@ -99,6 +102,7 @@ export async function POST(req:NextRequest,{params}:{
         const getHashedOTP = await prisma_Bank.verification.findFirst({
             where: {
               user_id: doesSenderExist.id,
+              usage:"transfer",
             },
             orderBy: {
               expiresAt: 'desc'
@@ -125,7 +129,8 @@ export async function POST(req:NextRequest,{params}:{
 
             const deleteOTP=await txn.verification.deleteMany({
                 where:{
-                    id:getHashedOTP.id
+                    id:getHashedOTP.id,
+                    usage:"transfer"
                 }
             })
 
@@ -133,6 +138,7 @@ export async function POST(req:NextRequest,{params}:{
                 where: { acc_id: doesSenderAccountExist.acc_id },
                 select: { balance: true, hold_amount: true }
             });
+        
             if (
                 !senderAcc || 
                 senderAcc.balance.minus(senderAcc.hold_amount).lt(amountToTransfer)

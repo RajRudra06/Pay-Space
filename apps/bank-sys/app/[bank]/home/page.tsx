@@ -18,6 +18,7 @@ import axios from "axios"
 import { AddMoneyPopup } from "../../components/addMoney";
 import { CheckBalancePopup } from "../../components/checkBalance";
 import { TransferFundsForm } from "../../components/transferFunds";
+import { DebitCardApplicationForm } from "../../components/issueCard";
 
 const NEXT_PUBLIC_API_URL=process.env.NEXT_PUBLIC_API_URL;
 
@@ -33,6 +34,7 @@ export default function Home() {
     const [showAccountForm, setShowAccountForm] = useState(false);
     const [showAddMoneyForm,setShowAddMoneyForm]=useState(false);
     const [showTransferForm,setShowTransferForm]=useState(false);
+    const [showDebitCardForm,setShowDebitCardForm]=useState(false);
     const [loading,setIsLoading]=useState(true)
     const [userInfo,setUserInfo]=useState<UserProfileType>()
     const [userAccounts,setUserAccounts]=useState<UserAccountType[]>([])
@@ -154,6 +156,11 @@ export default function Home() {
       if (serviceId === 'account') {
         setShowAccountForm(true);
       }
+
+      if(serviceId==='card'){
+        setShowDebitCardForm(true);
+      }
+
     };
 
     const handleQuickActionClick=(quickActionId:any)=>{
@@ -168,6 +175,7 @@ export default function Home() {
         if(quickActionId==='fundTransfer'){
             setShowTransferForm(true)
         }
+        
     }
 
     if (status === "loading" || loading) {
@@ -389,6 +397,8 @@ if (status === "authenticated" && customSession.user.loggedBank !== bankName && 
       {showTransferForm&&<TransferFundsForm  bankAccounts={userAccounts}bankName={bankName} theme={theme} onClose={()=>setShowTransferForm(false)} />}
 
       {showCheckBalance&&<CheckBalancePopup userAccounts={userAccounts} onClose={()=>setShowCheckBalance(false)} theme={theme} bankName={bankName}/>}
+
+      {showDebitCardForm&& <DebitCardApplicationForm bankAccounts={userAccounts} bankName={bankName} theme={theme} onClose={()=>setShowDebitCardForm(false)}/> }
     </div>
   );
 };

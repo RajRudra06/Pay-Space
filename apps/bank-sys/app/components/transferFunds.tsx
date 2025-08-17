@@ -11,12 +11,6 @@ import { send } from "process";
 
 const NEXT_PUBLIC_API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Mock user accounts - in real app, this would come from props or context
-const mockUserAccounts = [
-  { id: "acc1", number: "1234567890", type: "Savings", balance: 50000 },
-  { id: "acc2", number: "9876543210", type: "Current", balance: 125000 },
-  { id: "acc3", number: "5555666677", type: "Business", balance: 75000 }
-];
 type UserAccountType=z.infer<typeof userAccountSchema>
 
 const transferMethods = {
@@ -42,7 +36,7 @@ const purposeOptions = [
 ];
 
 const bankList = [
-  "HDFC Bank", "ICICI Bank", "State Bank of India", "Union Bank of India", 
+  "HDFC", "ICICI", "SBI", "UBI", 
   "Axis Bank", "Bank of Baroda", "Punjab National Bank", "Canara Bank"
 ];
 
@@ -59,6 +53,7 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
     accountNumber: '',
     confirmAccountNumber: '',
     ifscCode: '',
+    beneficiaryEmail: '',
     saveAsBeneficiary: false
   });
 
@@ -72,7 +67,6 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
   const [transactionId, setTransactionId] = useState('');
 
   //   @ts-ignore
-
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -85,7 +79,6 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
     }
   };
 
-  // Get selected account details
   const selectedAccount = bankAccounts.find(acc => acc.accName === formData.fromAccount);
 //   @ts-ignore
   const transferMethodDetails = transferMethods[formData.transferType];
@@ -113,7 +106,8 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
   };
 
   const validateStep2 = () => {
-    const requiredFields = ['beneficiaryName', 'beneficiaryBank', 'accountNumber', 'confirmAccountNumber', 'ifscCode'];
+    // Updated validation to include beneficiaryEmail as required field
+    const requiredFields = ['beneficiaryName', 'beneficiaryBank', 'accountNumber', 'confirmAccountNumber', 'ifscCode', 'beneficiaryEmail'];
     const allFieldsFilled = requiredFields.every(field =>
         //   @ts-ignore
  formData[field].trim() !== '');
@@ -123,6 +117,9 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
     // Check if account numbers match
     if (formData.accountNumber !== formData.confirmAccountNumber) return false;
     
+    // Basic email validation
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(formData.beneficiaryEmail)) return false;
  
     const ifscPattern = /^[A-Z]{4}0[A-Z0-9]{6}$/;
     if (!ifscPattern.test(formData.ifscCode)) return false;
@@ -134,7 +131,7 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
     switch (currentStep) {
       case 1: return validateStep1();
       case 2: return validateStep2();
-      case 3: return true; // Review step is always valid if we reach it
+      case 3: return true; 
       default: return false;
     }
   };
@@ -164,7 +161,9 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
     const sendOTP = toast.loading("Sending OTP...");
     try{
 
-        const sendOTPReq=await axios.get(`${NEXT_PUBLIC_API_URL}/${bankName}/transfer/sendOTP`)
+        const sendOTPReq=await axios.post(`${NEXT_PUBLIC_API_URL}/${bankName}/transfer/sendOTP`,{
+          usageType:"transfer"
+        })
 
         if(sendOTPReq.data.done===true){
             toast.success("OTP sent succesfully",{id:sendOTP})
@@ -191,19 +190,30 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
     }
 
     setIsLoading(true);
+
+
     const transferToast = toast.loading("Processing transfer...");
 
     try {
-      // Simulate API call
-      const transfer=await axios.post
-      
-      // Generate transaction ID
-      const txnId = `TXN${Date.now()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
-      setTransactionId(txnId);
-      
-      toast.success("Transfer completed successfully!", { id: transferToast });
-      setShowOTPPrompt(false);
-      setShowSuccess(true);
+
+      const transferCall=await axios.post(`${NEXT_PUBLIC_API_URL}/${bankName}/transfer/confirm`,{
+        beneficiaryName:formData.beneficiaryName,beneficiaryAccNumber:formData.accountNumber,beneficiaryBank:formData.beneficiaryBank,beneficiaryIFSC:formData.ifscCode,amountToTransferRaw:formData.amount,transferMethod:formData.transferType,purpose:formData.purpose,senderAccountName:selectedAccount?.accName,beneficiaryEmail:formData.beneficiaryEmail,OTP:otp
+      })
+
+      if(transferCall.data.done===true){
+        toast.success("Transaction Completed Successfully, funds will be transferred shortly.",{id:transferToast})
+        const txnId = `TXN${Date.now()}${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+
+        setTransactionId(txnId);
+        setShowOTPPrompt(false);
+        setShowSuccess(true);
+      }
+
+      else{
+        toast.error(`Error completing transaction,${transferCall.data.msg}`,{id:transferToast})
+
+      }
+    
     } catch (error) {
       toast.error("Transfer failed. Please try again.", { id: transferToast });
     } finally {
@@ -211,7 +221,6 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
     }
   };
 
-  // Success Screen
   if (showSuccess) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
@@ -587,17 +596,39 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">IFSC Code *</label>
-                <input
-                  type="text"
-                  name="ifscCode"
-                  value={formData.ifscCode}
-                  onChange={handleInputChange}
-                  placeholder="e.g. HDFC0000001"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">IFSC Code *</label>
+                  <input
+                    type="text"
+                    name="ifscCode"
+                    value={formData.ifscCode}
+                    onChange={handleInputChange}
+                    placeholder="e.g. HDFC0000001"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                {/* Added Beneficiary Email Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Beneficiary Email *</label>
+                  <input
+                    type="email"
+                    name="beneficiaryEmail"
+                    value={formData.beneficiaryEmail}
+                    onChange={handleInputChange}
+                    placeholder="beneficiary@example.com"
+                    className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      formData.beneficiaryEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.beneficiaryEmail)
+                        ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    required
+                  />
+                  {formData.beneficiaryEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.beneficiaryEmail) && (
+                    <p className="text-red-600 text-sm mt-1">Please enter a valid email address</p>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center">
@@ -614,7 +645,7 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
               {showValidationWarning && !validateStep2() && (
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                   <p className="text-red-800 text-sm">
-                    ⚠️ Please fill all required fields correctly and ensure account numbers match
+                    ⚠️ Please fill all required fields correctly, ensure account numbers match, and provide a valid email address
                   </p>
                 </div>
               )}
@@ -680,6 +711,11 @@ export const TransferFundsForm = ({ bankName,onClose,theme,bankAccounts }:{bankN
                       <div className="flex justify-between">
                         <span className="text-gray-600">IFSC:</span>
                         <span className="font-medium">{formData.ifscCode}</span>
+                      </div>
+                      {/* Added Beneficiary Email to Review Section */}
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="font-medium">{formData.beneficiaryEmail}</span>
                       </div>
                     </div>
                   </div>

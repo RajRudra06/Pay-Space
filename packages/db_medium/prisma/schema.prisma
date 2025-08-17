@@ -1,0 +1,32 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_MEDIUM")
+}
+
+model SanctionsList{
+  id              Int               @id @default(autoincrement())
+
+  fullName        String
+  DOB             DateTime?
+  nationalCountry String
+  sanctionCountry String
+  sanctionReason  String
+  sourceList      SourcesList
+}
+
+enum SourcesList{
+  OFAC
+  UN
+  EU
+}

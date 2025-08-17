@@ -22,6 +22,8 @@ model User {
   auth_code       Auth_codes[]
   tokens          Tokens[]
   verification    Verification[]
+  debitCardApplication  DebitCardApplication[]
+  debitCard             DebitCard[]
 
   @@unique([number, bankName])
   @@unique([email, bankName])
@@ -82,6 +84,8 @@ model Accounts {
   user            User              @relation(fields: [user_id], references: [id])
   accountsDetails AccountsDetails[]
   transactions    Transactions[]
+  debitCard       DebitCard[]
+  debitCardApplication  DebitCardApplication[]
 
   @@unique([user_id, bank, acc_name, type])
 }
@@ -108,6 +112,7 @@ model Verification {
   otp       String
   type      String
   expiresAt DateTime
+  usage      String?
   user      User     @relation(fields: [user_id], references: [id])
 }
 
@@ -141,6 +146,139 @@ model Tokens {
 
   @@unique([user_id, bankName])
   @@index([user_id, client_id])
+}
+
+model DebitCard{
+  id                      Int       @id @default(autoincrement())
+  debitCardApplicationID  Int 
+  processorToken          String
+  processorID             Int
+  user_id                 Int
+  acc_id                  Int
+  activationDeadline      DateTime?
+  applicationDate         DateTime @default(now())
+  estimatedDeliveryDate   DateTime?
+  approvalDate            DateTime?
+  trackingID              Int
+  status                  DebitCardStatus @default(UnderProcess)
+  panNumber               String
+  expiryDate              DateTime
+  hashedCVV               String
+  pinHash                 String
+  lastUsed                DateTime
+
+
+  debitCardApplication DebitCardApplication @relation(fields:[debitCardApplicationID],references:[id])
+  accounts         Accounts   @relation(fields: [acc_id], references: [acc_id])
+  user              User              @relation(fields: [user_id], references: [id])
+}
+
+model DebitCardApplication{
+  id               Int       @id @default(autoincrement())
+  user_id          Int
+  fullName         String
+  DOB              DateTime
+  Gender           gender
+  nationlIDType    NationalIDType
+  nationalIDNumber String
+  phoneNumber      String     @db.Char(10)
+  email            String        
+  addressLine1     String?
+  addressLine2     String?
+  City             String?
+  State            String?
+  postalCode       String?    @db.Char(6)
+  Country          String?    @default("India")
+  acc_id           Int
+  acc_number       String
+  acc_name         String
+  cardType         CardType
+  cardNetwork      CardNetwork
+  cardVariant      CardVariant
+  dailyATMLimit    DailyATMLimit         @default(ATM_30000)
+  dailyPOSLimit    POSLimit              @default(POS_60000)
+  nomineeFullName  String?
+  nomineeRelationship  String?
+  emergencyContact String     @db.Char(10) 
+  deliveryTime     String?
+  kycStatus               KYCStatus
+  status                  DebitCardStatus @default(UnderProcess)
+  kycQueueRef      String
+  retryCount       Int
+  riskNumber       Int
+  IncomeMontly     Int
+  employment_type  employment_type
+  existing_Loans   Boolean  @default(false)
+  loanAmount       Int
+
+  user             User       @relation(fields: [user_id], references: [id])
+  accounts         Accounts   @relation(fields: [acc_id], references: [acc_id])
+
+  debitCard        DebitCard[]
+
+}
+
+enum POSLimit {
+  POS_60000  @map("60000")
+  POS_250000 @map("250000")
+  POS_400000 @map("400000")
+}
+
+enum DailyATMLimit {
+  ATM_30000  @map("30000")
+  ATM_60000  @map("60000")
+  ATM_100000 @map("100000")
+}
+
+enum employment_type{
+  Salaried
+  SelfEmployed
+  Student
+  Unemployed
+}
+
+enum NationalIDType{
+  Aadhaar
+  PAN_Card
+  Passport
+  Voter_ID
+  Driving_License
+}
+
+enum CardType{
+  Physical 
+  Virtual
+}
+
+enum KYCStatus{
+  KYC_PENDING
+  KYC_PASSED
+  KYC_FAILED
+}
+
+enum DebitCardStatus{
+  UnderProcess
+  Issued
+  Activated
+  Deactivated
+  Blocked
+  Suspended
+  Closed
+  Expired
+  Rejected
+}
+
+enum CardVariant{
+  Classic
+  Platinum 
+  Gold
+  Custom
+}
+
+enum CardNetwork{
+  Visa
+  MasterCard
+  RuPay
 }
 
 enum gender {
