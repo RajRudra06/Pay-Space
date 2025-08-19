@@ -210,6 +210,7 @@ model DebitCardApplication{
   employment_type  employment_type
   existing_Loans   Boolean  @default(false)
   loanAmount       Int
+  reasonToReject   String?  @default("UnderProcess")
 
   user             User       @relation(fields: [user_id], references: [id])
   accounts         Accounts   @relation(fields: [acc_id], references: [acc_id])
@@ -230,11 +231,20 @@ enum DailyATMLimit {
   ATM_100000 @map("100000")
 }
 
+enum CardVariant{
+  Classic
+  Platinum 
+  Gold
+  Custom
+}
+
 enum employment_type{
-  Salaried
-  SelfEmployed
-  Student
-  Unemployed
+  SALARIED
+  GOVT_PSU
+  SELF_EMPLOYED
+  STUDENT
+  UNEMPLOYED
+  RETIRED
 }
 
 enum NationalIDType{
@@ -266,13 +276,6 @@ enum DebitCardStatus{
   Closed
   Expired
   Rejected
-}
-
-enum CardVariant{
-  Classic
-  Platinum 
-  Gold
-  Custom
 }
 
 enum CardNetwork{

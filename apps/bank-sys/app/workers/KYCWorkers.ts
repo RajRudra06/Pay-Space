@@ -1,19 +1,36 @@
 import { Worker } from 'bullmq';
 import { redisConnection } from '../lib/redis';
-// Remove problematic import and initialize directly
-import { NationalIDType, PrismaClient } from '@repo/db_banks/src/generated/prisma/client';
+import { CardVariant, NationalIDType, PrismaClient } from '@repo/db_banks/src/generated/prisma/client';
 import { checkIDFormat } from '../utils/checkIDFormat';
 import axios from "axios"
 import crypto from "crypto"
+import { getIncomePoints,getTypePoints,getDTIPoints } from '../lib/riskScoreCalculator';
+import { getCardForRisk } from '../lib/cardForRisk';
+import { generateAccountRef, generateCustomerRef, generateRequestId } from '../lib/issuerPayloadGeneration';
+import { KYCQueue } from '../lib/kycQueue';
 
-// Initialize Prisma directly in worker
 const prisma_Bank = new PrismaClient();
 
+// gov id verify env secrets
 const BANK_SYS_SHARED_SECRET = process.env.BANK_SYS_SHARED_SECRET;
 const VERIFICATION_API_KEY=process.env.VERIFICATION_API_KEY;
 const BANK_SYS_CLIENT_ID=process.env.BANK_SYS_CLIENT_ID;
 const BANK_SYS_SIGNATURE_KEY=process.env.BANK_SYS_SIGNATURE_KEY;
 const GOV_ID_CHECK_URL=process.env.GOV_ID_CHECK_URL;
+
+// sanctions env secrets
+const SANCTION_SYS_SIGNATURE_KEY=process.env.SANCTION_SYS_SIGNATURE_KEY
+const SANCTION_LIST_CHECK_URL=process.env.SANCTION_LIST_CHECK_URL
+const SANCTION_BANK_SYS_CLIENT_ID=process.env.SANCTION_BANK_SYS_CLIENT_ID
+const SANCTION_VERIFICATION_API_KEY=process.env.SANCTION_VERIFICATION_API_KEY
+const SANCTION_BANK_SYS_SHARED_SECRET=process.env.SANCTION_BANK_SYS_SHARED_SECRET
+
+// card issuer env secrets
+const CARD_ISSUER_API_URL=process.env.CARD_ISSUER_API_URL;
+const CARD_ISSUER_SIGNATURE_KEY=process.env.CARD_ISSUER_SIGNATURE_KEY;
+const BANK_SYS_CLIENT_CARD_ISSUER_API_KEY=process.env.BANK_SYS_CLIENT_CARD_ISSUER_API_KEY
+const BANK_SYS_CLIENT_ID_CARD_ISSUER=process.env.BANK_SYS_CLIENT_ID_CARD_ISSUER
+const BANK_SYS_CLIENT_CARD_ISSUER_SECRET=process.env.BANK_SYS_CLIENT_CARD_ISSUER_SECRET
 
 console.log("NEW KYC PROCESS DETECTED---------------------------------------------------------------------")
 console.log('🔍 DATABASE_URL_DB_BANK:', process.env.DATABASE_URL_DB_BANK ? 'EXISTS' : 'MISSING');
@@ -52,29 +69,31 @@ const worker = new Worker(
 
     if(job.name === "process-kyc"){
         const maxRetry=3;
+        let riskScore=0;
+        const RISK_MEASURE_THRESHOLD=40;
 
         console.log('✅ Processing KYC verification job...');
         const { kycRef } = job.data;
         console.log('🔍 KYC Reference:', kycRef);
 
+        // find the kyc job uing kycRef
+        console.log('🔎 Searching for KYC job using kycRef');
+        const KYCJob = await prisma_Bank.debitCardApplication.findFirst({
+          where: { kycQueueRef:kycRef,status:"UnderProcess",kycStatus:"KYC_PENDING"}
+        });
+
+        console.log('📈 Found KYC Job:', KYCJob);
+        console.log('💾 KYC details:', JSON.stringify(KYCJob, null, 2));
+    
+        if (!KYCJob) {
+          console.log(`⚠️  No pending KYC job found for KYC Ref: ${kycRef} found. Exiting job.`);
+          return; 
+        }
+
         try {
 
-          // find the kyc job uing kycRef
-          console.log('🔎 Searching for KYC job using kycRef');
-          const KYCJob = await prisma_Bank.debitCardApplication.findFirst({
-            where: { kycQueueRef:kycRef,status:"UnderProcess",kycStatus:"KYC_PENDING"}
-          });
-
-          console.log('📈 Found KYC Job:', KYCJob);
-          console.log('💾 KYC details:', JSON.stringify(KYCJob, null, 2));
-      
-          if (!KYCJob) {
-            console.log(`⚠️  No pending KYC job found for KYC Ref: ${kycRef} found. Exiting job.`);
-            return; 
-          }
-
-          if(KYCJob?.cardType==="Virtual"){
-            console.log('📈 KYC job is virtual', KYCJob);
+          if(KYCJob?.cardType==="Virtual" || KYCJob?.cardType==="Physical"){
+            console.log('📈 KYC job is virtual/physical', KYCJob);
             console.log('💰 Starting KYC verification process...');
 
             if(KYCJob.retryCount>maxRetry){
@@ -95,11 +114,10 @@ const worker = new Worker(
                 }
             })
 
-            
             // personal checks
             let personalCheck=false;
 
-            const personalInfoCheck=getUserInfo?.username?.toLowerCase()===KYCJob.fullName.toLowerCase() && new Date(getUserInfo?.DOB).toISOString().split("T")[0] !== new Date(KYCJob.DOB).toISOString().split("T")[0] && getUserInfo.email===KYCJob.email && getUserInfo.number===KYCJob.phoneNumber 
+            const personalInfoCheck=getUserInfo?.username?.toLowerCase()===KYCJob.fullName.toLowerCase() && new Date(getUserInfo?.DOB).toISOString().split("T")[0] === new Date(KYCJob.DOB).toISOString().split("T")[0] && getUserInfo.email===KYCJob.email && getUserInfo.number===KYCJob.phoneNumber 
 
             const getAccountDetails=await prisma_Bank.accounts.findFirst({
                 where:{
@@ -128,55 +146,294 @@ const worker = new Worker(
             IDNumberCheck = KYCJob.nationalIDNumber === getAccountDetailsInfo?.aadhaarNumber;
             }
 
+            if(personalInfoCheck===true&&accountInfoCheck===true&&IDNumberCheck===true&&IDFormatCheck===true){
+
+              console.log("All perosnal Information check passed.");
+              personalCheck=true;
+
             // api call to registered IDs holders
-            const body={
-                NationalIDType:KYCJob.nationlIDType,
-                NationalIDNumber:KYCJob.nationalIDNumber,
-                fullName:KYCJob.fullName,
-                DOB:KYCJob.DOB,
-                bank_sys_Client_Secret:BANK_SYS_SHARED_SECRET
-            }
+            const bodyIDCheck={
+              NationalIDType:KYCJob.nationlIDType,
+              NationalIDNumber:KYCJob.nationalIDNumber,
+              fullName:KYCJob.fullName,
+              DOB:KYCJob.DOB,
+              bank_sys_Client_Secret:BANK_SYS_SHARED_SECRET
+          }
 
-            const rawBody=JSON.stringify(body);
-            const timestamp = new Date().toISOString();
+          const rawBodyIDCheck=JSON.stringify(bodyIDCheck);
+          const timestampIDCheck = new Date().toISOString();
 
-            const signature = crypto
-            .createHmac("sha256",BANK_SYS_SIGNATURE_KEY!)
-            .update(rawBody)
+          const signatureIDCheck = crypto
+          .createHmac("sha256",BANK_SYS_SIGNATURE_KEY!)
+          .update(rawBodyIDCheck)
+          .digest("hex");
+
+          const IDCheckReq=await axios.post(`${GOV_ID_CHECK_URL}`,bodyIDCheck,{
+              headers:{
+                  'Content-Type':'application/json',
+                  'Authorization':`Bearer ${VERIFICATION_API_KEY}`,
+                  'x-cliennt-id':BANK_SYS_CLIENT_ID,
+                  'x-signature':signatureIDCheck,
+                  'x-timestamp':timestampIDCheck
+              },
+              timeout: 60000, 
+              validateStatus: (status) => status === 200 
+          })
+
+          if(IDCheckReq.data.done===true){
+
+            // check for name present in sanctions list 
+            const bodySanctionCheck={
+              fullName:KYCJob.fullName,
+              DOB:KYCJob.DOB,
+              nationalCountry:KYCJob.Country,
+              sanction_Bank_Sys_Shared_Secret:SANCTION_BANK_SYS_SHARED_SECRET
+          }
+
+            const rawBodySanctionCheck=JSON.stringify(bodySanctionCheck);
+
+            const timestampSanctionCheck = new Date().toISOString();
+
+            const signatureSanctionCheck = crypto
+            .createHmac("sha256",SANCTION_SYS_SIGNATURE_KEY!)
+            .update(rawBodySanctionCheck)
             .digest("hex");
 
-            const IDCheckReq=await axios.post(`${GOV_ID_CHECK_URL}`,body,{
-                headers:{
-                    'Content-Type':'application/json',
-                    'Authorization':`Bearer ${VERIFICATION_API_KEY}`,
-                    'x-cliennt-id':BANK_SYS_CLIENT_ID,
-                    'x-signature':signature,
-                    'x-timestamp':timestamp
-                }
-            })
 
-            if(IDCheckReq.data.done===true){
+          const SanctionCheckReq=await axios.post(`${SANCTION_LIST_CHECK_URL}`,bodySanctionCheck,{
+            headers:{
+                'Content-Type':'application/json',
+                'Authorization':`Bearer ${SANCTION_VERIFICATION_API_KEY}`,
+                'x-cliennt-id':SANCTION_BANK_SYS_CLIENT_ID,
+                'x-signature':signatureSanctionCheck,
+                'x-timestamp':timestampSanctionCheck
+            },
+            timeout: 60000, 
+              validateStatus: (status) => status === 200 
+        })
 
-                // check in sanctions list for the person
-                // check eligibility for particular cardVariant
-                
-                if(personalInfoCheck===true&&accountInfoCheck===true&&IDNumberCheck===true&&IDFormatCheck===true){
-                    console.log("All perosnal Information check passed.");
-                    personalCheck=true;
-                }
-    
-                console.log('🎉 Verification completed successfully!');
-                console.log('⏰ Completed at:', new Date().toISOString());
+        if(SanctionCheckReq.data.done===true){
+
+            // risk score calculations
+
+            // risk score for existing loan
+            const loanRisk=KYCJob.existing_Loans===true?5:0;
+            let DTIPoints=0;
+
+            // risk score for montly obligation
+            const monthlyObligation = KYCJob.existing_Loans
+            ? Math.max(1000, Math.round(KYCJob.loanAmount * 0.02))
+            : 0; 
+
+
+            if(monthlyObligation!==0){
+               const DTI = KYCJob.IncomeMontly > 0 ? monthlyObligation / KYCJob.IncomeMontly : 1;
+
+               DTIPoints=getDTIPoints(DTI); 
+
             }
 
+            // risk score addition
+            riskScore+=getIncomePoints(KYCJob.IncomeMontly)+getTypePoints(KYCJob.employment_type)+loanRisk+DTIPoints;
+             
+            if(riskScore<RISK_MEASURE_THRESHOLD){
+
+            const getCard=getCardForRisk(riskScore);
+            const deliveryTime=KYCJob.cardType==="Virtual"?"noTime":"toBeUpdated"
+
+            const debitCardApplicationApproved=await prisma_Bank.debitCardApplication.update({
+              where:{
+                id:KYCJob.id
+              },
+              data:{
+                  cardVariant:getCard.variant,
+                  dailyATMLimit:getCard.atmLimit,
+                  dailyPOSLimit:getCard.posLimit,
+                  deliveryTime:deliveryTime,
+                  kycStatus:"KYC_PASSED",
+                  status:"UnderProcess",
+                  riskNumber:riskScore,
+                  retryCount:{
+                    increment:1
+                  },
+                  reasonToReject:"Application Approved"
+              }
+            })
+
+            // api call to issuer with minimal details
+
+            const requestID=generateRequestId();
+            const customerRef=generateCustomerRef(getUserInfo!.id.toString())
+
+            const productRequested={
+              cardType:KYCJob.cardType,
+              cardNetwork:KYCJob.cardNetwork,
+              cardVariant:KYCJob.cardVariant,
+            }
+
+            const cardHolder={
+              fullName:KYCJob.fullName,
+              DOB:KYCJob.DOB.toISOString().split('T')[0]
+            }
+
+            const deliveryDetails=KYCJob.cardType==="Physical"?{
+              address:{
+                addressLine1:KYCJob.addressLine1,
+                City:KYCJob.City,
+                State:KYCJob.State,
+                Country:KYCJob.Country,
+                postalCodes:KYCJob.postalCode,
+                virtualCard:false
+              },
+              deliveryTime:KYCJob.deliveryTime
+            }:{none:"none",
+            virtualCard:true
+          }
+
+            const dailyLimit={
+              dailyPOSLimit:KYCJob.dailyPOSLimit,
+              dailyATMLimit:KYCJob.dailyATMLimit,
+            }
+
+            const bodyToSendIssuer={requestID:requestID,customerRef:customerRef,productRequested:productRequested,cardHolder:cardHolder,deliveryDetails:deliveryDetails,dailyLimit:dailyLimit,accountReference:generateAccountRef(KYCJob.acc_id.toString()),
+              issuer_Bank_Sys_Shared_Secret:BANK_SYS_CLIENT_CARD_ISSUER_SECRET};
+
+            const rawBodySendIssuer=JSON.stringify(bodyToSendIssuer);
+
+            const timeStampSendIssuer = new Date().toISOString();
+
+            const signatureSendIssuer = crypto
+            .createHmac("sha256",CARD_ISSUER_SIGNATURE_KEY!)
+            .update(rawBodySendIssuer)
+            .digest("hex");
+
+            const issuerReqDebitCard=await axios.post(`${CARD_ISSUER_API_URL}`,bodyToSendIssuer,{
+              headers:{
+                'Content-Type':'application/json',
+                'Authorization':`Bearer ${BANK_SYS_CLIENT_CARD_ISSUER_API_KEY}`,
+                'x-cliennt-id':BANK_SYS_CLIENT_ID_CARD_ISSUER,
+                'x-signature':signatureSendIssuer,
+                'x-timestamp':timeStampSendIssuer
+            }
+            })
+
+            console.log('🎉 Verification completed successfully and user verified!');
+            console.log('⏰ Completed at:', new Date().toISOString());
+
+            }
+            else {
+              const rejectApplicationRiskScore=await prisma_Bank.debitCardApplication.update({
+                where:{
+                  id:KYCJob.id 
+                },
+                data:{
+                  kycStatus:"KYC_FAILED",
+                  status:"Rejected",
+                  deliveryTime:"none",
+                  riskNumber:riskScore,
+                  retryCount:{
+                    increment:1
+                  },
+                  reasonToReject:"Not enough Credit Score"
+                }
+              })
+
+              console.log('🎉 Verification completed successfully and user not verified -> not enough credit score !');
+              console.log('⏰ Completed at:', new Date().toISOString());
+            }
+        }
+
+        else if(SanctionCheckReq.data.done===false&&SanctionCheckReq.data.score>0){
+
+            const rejectApplicationSanctionList=await prisma_Bank.debitCardApplication.update({
+              where:{
+                id:KYCJob.id 
+              },
+              data:{
+                kycStatus:"KYC_FAILED",
+                status:"Rejected",
+                deliveryTime:"none",
+                riskNumber:100,
+                retryCount:{
+                  increment:1
+                },
+                reasonToReject:"Match found in Sanctions List"
+
+              }
+            })
+
+            console.log('🎉 Verification completed successfully and user not verified -> match in sanctions list !');
+            console.log('⏰ Completed at:', new Date().toISOString());
+        }
+             
+          }
+
+          else if(IDCheckReq.data.done===false){
+
+            const rejectApplicationIDCheck=await prisma_Bank.debitCardApplication.update({
+              where:{
+                id:KYCJob.id 
+              },
+              data:{
+                kycStatus:"KYC_FAILED",
+                status:"Rejected",
+                deliveryTime:"none",
+                riskNumber:100,
+                retryCount:{
+                  increment:1
+                },
+                reasonToReject:"Goverment ID Check Failed"
+              }
+            })
+
+            console.log('🎉 Verification completed successfully and user not verified -> ID check invalid !');
+            console.log('⏰ Completed at:', new Date().toISOString());
+
+          }
+
+          }
+
+          else{
+
+            const rejectApplicationPersonalCheck=await prisma_Bank.debitCardApplication.update({
+              where:{
+                id:KYCJob.id 
+              },
+              data:{
+                kycStatus:"KYC_FAILED",
+                status:"Rejected",
+                deliveryTime:"none",
+                riskNumber:100,
+                retryCount:{
+                  increment:1
+                },
+                reasonToReject:"Personal Information Check Failed"
+              }
+            })
+
+            console.log('🎉 Verification completed successfully and user not verified -> personal info check failed !');
+            console.log('⏰ Completed at:', new Date().toISOString());
+
+          }
+          
           }
 
         } catch (error) {
           console.error('💥 Error processing verification:');
           console.error('🚨 Error details:', error);
+          const updateFailedKYCStatus=await prisma_Bank.debitCardApplication.update({
+            where: { id: KYCJob.id },
+            data: { retryCount: { increment: 1 } }
+          });
+          
+          const delayMs = Math.pow(2, KYCJob.retryCount + 1) * 5000;
+          const retryJob=await KYCQueue.add('process-kyc', { kycRef }, { 
+            delay: delayMs,
+            attempts: 1 
+          });
         //   @ts-ignore
           console.error('📍 Stack trace:', error.stack);
-          throw error; // Re-throw to trigger failed event
+          throw error; 
         }
     } else {
       console.log('⚠️  Unknown job name:', job.name);

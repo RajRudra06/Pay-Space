@@ -17,16 +17,20 @@ datasource db {
 model SanctionsList{
   id              Int               @id @default(autoincrement())
 
-  fullName        String
-  DOB             DateTime?
-  nationalCountry String
-  sanctionCountry String
-  sanctionReason  String
-  sourceList      SourcesList
+  fullName        String  @map("fullname")
+  DOB             DateTime? @map("dob")
+  nationalCountry String    @map("nationalcountry")
+  sanctionCountry String    @map("sanctioncountry")
+  sanctionReason  String     @map("sanctionreason")
+  sourceList      SourcesList @map("sourcelist")
 }
 
-enum SourcesList{
+enum SourcesList {
   OFAC
-  UN
   EU
+  UN
+  DFAT
+  HM_TREASURY
+  CANADA_SANCTIONS
+  MOFA_JAPAN
 }

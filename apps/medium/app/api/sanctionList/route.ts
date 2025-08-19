@@ -1,7 +1,12 @@
 import { NextRequest,NextResponse } from "next/server";
 import crypto from "crypto"
+import prisma_Medium from "@repo/db_medium/prisma";
+import axios from "axios"
+import Fuse from "fuse.js";
+import { runCheck } from "../../../lib/runSanctionsCheck";
 
-const BANK_SYS_SIGNATURE_KEY=process.env.BANK_SYS_SIGNATURE_KEY
+const SANCTION_SYS_SIGNATURE_KEY=process.env.SANCTION_SYS_SIGNATURE_KEY
+const SANCTION_LIST_CHECK_URL=process.env.SANCTION_LIST_CHECK_URL
 
 export async function POST(req:NextRequest){
     try{
@@ -25,7 +30,7 @@ export async function POST(req:NextRequest){
             return NextResponse.json({ error: "Timestamp expired",   done: false}, { status: 401 });
         }
 
-        if (authHeader !== `Bearer ${process.env.VERIFICATION_API_KEY}`) 
+        if (authHeader !== `Bearer ${process.env.SANCTION_VERIFICATION_API_KEY}`) 
         {
             return NextResponse.json({
                 msg:"Unauthorised access",
@@ -33,12 +38,12 @@ export async function POST(req:NextRequest){
             }, { status: 401 }); 
         }
 
-        if (clientId !== process.env.BANK_SYS_CLIENT_ID) 
+        if (clientId !== process.env.SANCTION_BANK_SYS_CLIENT_ID) 
         {
-            return NextResponse.json({ error: "Invalid Client ID",      done: false}, { status: 401 });
+            return NextResponse.json({ error: "Invalid Client ID",done: false}, { status: 401 });
         }
 
-        const computedSignature = crypto.createHmac("sha256", BANK_SYS_SIGNATURE_KEY!).update(rawBody).digest("hex");
+        const computedSignature = crypto.createHmac("sha256", SANCTION_SYS_SIGNATURE_KEY!).update(rawBody).digest("hex");
 
         if (computedSignature !== signature) {
             return NextResponse.json({ error: "Invalid Signature", done: false }, { status: 401,             
@@ -47,33 +52,32 @@ export async function POST(req:NextRequest){
 
         const body = JSON.parse(rawBody);
 
-        const {NationalIDType,NationalIDNumber,fullName,DOB,bank_sys_Client_Secret}=body;
+        const {fullName,DOB,nationalCountry,sanction_Bank_Sys_Shared_Secret}=body;
 
-        if (bank_sys_Client_Secret !== process.env.BANK_SYS_SHARED_SECRET) 
+        if (sanction_Bank_Sys_Shared_Secret !== process.env.SANCTION_BANK_SYS_SHARED_SECRET) 
         {
             return NextResponse.json({ error: "Invalid Bank Shared Secret",done: false}, { status: 403 });
         }
 
-        // random pass/fail
-        const pass = Math.random() < 0.8;
+        const checkSanction=await runCheck({fullName,DOB,nationalCountry})
 
-        if (pass===true) {
+        if(checkSanction.flagSanction===false){
             return NextResponse.json({
-              status: "verified",
-              referenceId: crypto.randomUUID(),
-              done:true
-            },{status:200});
-        } 
-        
-        else 
-        {
-            return NextResponse.json({
-              status: "failed",
-              reason: "ID could not be verified",
-              referenceId: crypto.randomUUID(),
-              done:false}, { status: 200 });
+                msg:"Sanction Checks passed",
+                done: true
+            }, { status: 200 });
         }
 
+        else{
+            return NextResponse.json({
+                msg:"Sanction Checks not passed",
+                done: false,
+                score:checkSanction.score,
+                reason:checkSanction.reason,
+                sourceList:checkSanction.sourceList
+            }, { status: 200 });
+        }
+        
     }
 
     catch (error) {

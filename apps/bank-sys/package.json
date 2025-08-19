@@ -14,6 +14,7 @@
   "dependencies": {
     "@repo/db_banks": "*",
     "@repo/ui": "*",
+    "@repo/db_medium":"*",
     "bullmq": "^5.56.9",
     "crypto": "^1.0.1",
     "ioredis": "^5.7.0",

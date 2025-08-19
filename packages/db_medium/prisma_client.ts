@@ -1,10 +1,11 @@
-// import dotenv from "dotenv";
-// dotenv.config({ path: '../../.env' });
+import dotenv from "dotenv";
+import {PrismaClient} from "./generated/prisma"
+dotenv.config({ path: '../../.env' });
 
-// const url = process.env.DATABASE_URL_DB_BANK;
+const url = process.env.DATABASE_URL_MEDIUM;
 
-// const prisma_Medium = new PrismaClient({datasourceUrl: url});
+const prisma_Medium = new PrismaClient({datasourceUrl: url});
 
-// export default prisma_Medium;
+export default prisma_Medium;
 
 

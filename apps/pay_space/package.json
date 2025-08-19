@@ -13,6 +13,8 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tabs": "^1.1.12",
     "@repo/db": "*",
+    "@repo/db_medium":"*",
+    "@repo/db_banks": "*",
     "@repo/next-auth_types": "*",
     "@repo/store": "*",
     "@repo/validation": "*",

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest,{params}:{params:{bank:string}}) {
     const {bank}=params;
     const bankName=bank.toLowerCase();
     const session=await getServerSession(authOptionsBankSys)
-    const {fullName,DOB,Gender,nationalIDType,nationalIDNumber,phoneNumber,email,addressLine1,addressLine2,City,State,postalCode,Country,cardType,cardNetwork,cardVariant,dailyATMLimit,dailyPOSLimit,nomineeFullName,nomineeRelationship,emergencyContact,deliveryTime,acc_number,accType,acc_name,OTP}=await req.json();
+    const {fullName,DOB,Gender,nationalIDType,nationalIDNumber,phoneNumber,email,addressLine1,addressLine2,City,State,postalCode,Country,cardType,cardNetwork,cardVariant,dailyATMLimit,dailyPOSLimit,nomineeFullName,nomineeRelationship,emergencyContact,deliveryTime,acc_number,accType,acc_name,OTP,monthlyIncome,employment_type,existing_loan,loanAmount}=await req.json();
 
     if(!session){
         return NextResponse.json(
@@ -140,7 +140,12 @@ export async function POST(req: NextRequest,{params}:{params:{bank:string}}) {
                 kycStatus:"KYC_PENDING",
                 status:"UnderProcess",
                 kycQueueRef:kycRef,
-                retryCount:0
+                retryCount:0,
+                riskNumber:0,
+                IncomeMontly:monthlyIncome,
+                employment_type:employment_type,
+                existing_Loans:existing_loan,
+                loanAmount:loanAmount
             }
         })
     
@@ -187,12 +192,6 @@ export async function POST(req: NextRequest,{params}:{params:{bank:string}}) {
             done: false
         });
       }
-
-// ---- KYC Worker Steps ----
-// - perform identity verification
-// - fraud check & sanction screening  // (added step for better simulation realism)
-// - if KYC fails → set status = KYC_FAILED and store reason code  // (pass/fail handling before next step)
-// - if KYC passes → set status = KYC_PASSED
 
 // if KYC passed then change status, another worker of bank-sys will send an api req to issuer with payload as minimal details of user 
 // (BIN (product type), customer details, delivery type, personalization options.)
