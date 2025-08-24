@@ -232,7 +232,7 @@ enum DailyATMLimit {
 }
 
 enum CardVariant{
-  Classic
+  Classic 
   Platinum 
   Gold
   Custom

@@ -21,32 +21,32 @@ export async function POST(req:NextRequest){
         if (!authHeader || !clientId || !signature || !timestamp) {
             return NextResponse.json({
                 msg:"Missing required headers",
-                done: false
+                done: -1
             }, { status: 400 }); 
         }
 
         if (!timestamp || Math.abs(new Date(timestamp).getTime() - new Date().getTime()) > 5 * 60 * 1000) 
         {
-            return NextResponse.json({ error: "Timestamp expired",   done: false}, { status: 401 });
+            return NextResponse.json({ error: "Timestamp expired",   done: -1}, { status: 401 });
         }
 
         if (authHeader !== `Bearer ${process.env.SANCTION_VERIFICATION_API_KEY}`) 
         {
             return NextResponse.json({
                 msg:"Unauthorised access",
-                done: false
+                done: -1
             }, { status: 401 }); 
         }
 
         if (clientId !== process.env.SANCTION_BANK_SYS_CLIENT_ID) 
         {
-            return NextResponse.json({ error: "Invalid Client ID",done: false}, { status: 401 });
+            return NextResponse.json({ error: "Invalid Client ID",done: -1}, { status: 401 });
         }
 
         const computedSignature = crypto.createHmac("sha256", SANCTION_SYS_SIGNATURE_KEY!).update(rawBody).digest("hex");
 
         if (computedSignature !== signature) {
-            return NextResponse.json({ error: "Invalid Signature", done: false }, { status: 401,             
+            return NextResponse.json({ error: "Invalid Signature", done: -1 }, { status: 401,             
             });
         }
 
@@ -56,7 +56,7 @@ export async function POST(req:NextRequest){
 
         if (sanction_Bank_Sys_Shared_Secret !== process.env.SANCTION_BANK_SYS_SHARED_SECRET) 
         {
-            return NextResponse.json({ error: "Invalid Bank Shared Secret",done: false}, { status: 403 });
+            return NextResponse.json({ error: "Invalid Bank Shared Secret",done: -1}, { status: 403 });
         }
 
         const checkSanction=await runCheck({fullName,DOB,nationalCountry})
@@ -83,7 +83,7 @@ export async function POST(req:NextRequest){
     catch (error) {
         return NextResponse.json({
             msg: error instanceof Error ? error.message : "Internal Server Error",
-            done: false
+            done: -1
         }, { status: 500 });
     }
 }

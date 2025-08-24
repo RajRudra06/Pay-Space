@@ -34,3 +34,60 @@ enum SourcesList {
   CANADA_SANCTIONS
   MOFA_JAPAN
 }
+
+model BIN_NUMBERS {
+  id              Int               @id @default(autoincrement())
+  network      Network
+  productType  ProductType
+  Tier         Tier
+  BIN          String
+  BIN_Length   Int
+  Country      Country
+  Currency     Currency
+  nextAccount     BigInt   @default(0) 
+  allocatedCount  Int      @default(0)
+}
+
+enum Network {
+  MasterCard
+  Visa
+  RuPay
+}
+
+enum ProductType{
+  Debit
+  Credit 
+  Prepaid
+}
+
+enum Tier{
+  Classic
+  Gold 
+  Platinum
+}
+
+enum Country {
+  IN   
+  USA  
+  CAN 
+  DE   
+  CN   
+  JP   
+  GB   
+  FR   
+  IT  
+  AU  
+}
+
+enum Currency {
+  INR
+  USD
+  CAD
+  EUR_DE
+  CNY
+  JPY
+  GBP
+  EUR_FR
+  EUR_IT
+  AUD
+}

@@ -251,7 +251,6 @@ const worker = new Worker(
                   dailyPOSLimit:getCard.posLimit,
                   deliveryTime:deliveryTime,
                   kycStatus:"KYC_PASSED",
-                  status:"UnderProcess",
                   riskNumber:riskScore,
                   retryCount:{
                     increment:1
@@ -269,6 +268,7 @@ const worker = new Worker(
               cardType:KYCJob.cardType,
               cardNetwork:KYCJob.cardNetwork,
               cardVariant:KYCJob.cardVariant,
+              cardTypeMoney:"Debit"
             }
 
             const cardHolder={
@@ -317,10 +317,73 @@ const worker = new Worker(
             }
             })
 
-            console.log('🎉 Verification completed successfully and user verified!');
+            if(issuerReqDebitCard.data.done===true){
+                const debitCardApplicationApprovedCardReq=await prisma_Bank.debitCardApplication.update({
+                  where:{
+                    id:debitCardApplicationApproved.id
+                  },
+                  data:{
+                    status:"UnderProcess"
+                  }
+                })
+            }
+
+            else if(issuerReqDebitCard.data.done===-1){
+              const rejectApplicationRiskScore=await prisma_Bank.debitCardApplication.update({
+                where:{
+                  id:KYCJob.id 
+                },
+                data:{
+                  kycStatus:"KYC_PASSED",
+                  status:"Rejected",
+                  deliveryTime:"none",
+                  riskNumber:riskScore,
+                  retryCount:{
+                    increment:1
+                  },
+                  reasonToReject:"Not enough Credit Score"
+                }
+              })    
+              
+              
+              const delayMs = Math.pow(2, rejectApplicationRiskScore.retryCount) * 5000;
+              const retryJob=await KYCQueue.add('process-kyc', { kycRef }, { 
+                delay: delayMs,
+                attempts: 1 
+              });
+            
+            }
+            // else if(issuerReqDebitCard.data.done===false){
+            //   const rejectCardIssuer=await prisma_Bank.debitCardApplication.update({
+            //     where:{
+            //       id:KYCJob.id 
+            //     },
+            //     data:{
+            //       kycStatus:"KYC_PASSED",
+            //       status:"Rejected",
+            //       deliveryTime:"none",
+            //       riskNumber:100,
+            //       retryCount:{
+            //         increment:1
+            //       },
+            //       reasonToReject:"Rejected from the card Issuer side"
+            //     }
+            //   })
+
+            // //   console.log('🎉 Verification completed successfully and card not issued by issuer !');
+            // //   console.log('⏰ Completed at:', new Date().toISOString());
+            // // }
+
+            // // else if(issuerReqDebitCard.status>=400&&issuerReqDebitCard.data.done===-1){
+            // //   throw new Error(`API call to card issuer failed with status ${issuerReqDebitCard.status}`);
+
+            // // }
+
+
+            console.log('🎉 Verification completed successfully and user verified and req sent succesfully');
             console.log('⏰ Completed at:', new Date().toISOString());
 
-            }
+             }
             else {
               const rejectApplicationRiskScore=await prisma_Bank.debitCardApplication.update({
                 where:{
@@ -365,6 +428,11 @@ const worker = new Worker(
             console.log('🎉 Verification completed successfully and user not verified -> match in sanctions list !');
             console.log('⏰ Completed at:', new Date().toISOString());
         }
+
+        else if(SanctionCheckReq.status>=400 && SanctionCheckReq.data.done===-1){
+          throw new Error(`API call to sanction list provider failed with status ${SanctionCheckReq.status}`);
+
+        }
              
           }
 
@@ -389,6 +457,10 @@ const worker = new Worker(
             console.log('🎉 Verification completed successfully and user not verified -> ID check invalid !');
             console.log('⏰ Completed at:', new Date().toISOString());
 
+          }
+
+          else if(IDCheckReq.status>=400 && IDCheckReq.data.done===-1) {
+            throw new Error(`API call to goverment ID failed with status ${IDCheckReq.status}`);
           }
 
           }
@@ -426,7 +498,7 @@ const worker = new Worker(
             data: { retryCount: { increment: 1 } }
           });
           
-          const delayMs = Math.pow(2, KYCJob.retryCount + 1) * 5000;
+          const delayMs = Math.pow(2, updateFailedKYCStatus.retryCount) * 5000;
           const retryJob=await KYCQueue.add('process-kyc', { kycRef }, { 
             delay: delayMs,
             attempts: 1 

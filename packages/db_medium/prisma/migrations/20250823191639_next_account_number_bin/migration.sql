@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "public"."BIN_NUMBERS" ADD COLUMN     "allocatedCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "nextAccount" BIGINT NOT NULL DEFAULT 0;
