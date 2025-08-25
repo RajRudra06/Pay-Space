@@ -2,6 +2,8 @@ import { Bank_name } from "@repo/db/client";
 import { NextRequest,NextResponse } from "next/server";
 import crypto from "crypto"
 import prisma_Medium from "@repo/db_medium/prisma";
+import { randomDelayProducer } from "../../../lib/randomDelayProducer";
+import { cardIssuerQueue } from "../../../lib/cardissuerQueue";
 
 const CARD_ISSUER_SIGNATURE_KEY=process.env.CARD_ISSUER_SIGNATURE_KEY
 
@@ -53,50 +55,25 @@ export async function POST(req:NextRequest,{params}:{params:{bank:Bank_name}}){
 
         const {requestID,customerRef,productRequested,cardHolder,deliveryDetails,dailyLimit,issuer_Bank_Sys_Shared_Secret,accountReference}=body;
 
-
         if (issuer_Bank_Sys_Shared_Secret !== process.env.BANK_SYS_CLIENT_CARD_ISSUER_SECRET) 
         {
             return NextResponse.json({ error: "Invalid Bank Shared Secret",done: -1}, { status: 403 });
         }
 
-        // look the DB for same customer ref, name and accref to see if already gotten or not if yes start with that if not make a DB entry and start 
+        
+            const cardIssRef = crypto.randomUUID();
 
-        // one type of advanced KYC
+            const delayMs = await randomDelayProducer();
 
-        // card network communication 
-
-        // pan(luhn), cvv 
-
-        // doing advance KYC
-
-        // contact network
-
-
-
-        // BIN logic and PAN generation
-
-            // get BIN acc to the customer req
-
-            // const getBIN=await prisma_Medium.bIN_NUMBERS.findFirst({
-            //     where:{
-            //         network:productRequested.cardNetwork,
-            //         productType:productRequested.cardTypeMoney,
-            //         Tier:productRequested.cardVariant,
-            //         Country:deliveryDetails.address.Country
-            //     }
-            // })
-
-            // if(!getBIN){
-            //     return NextResponse.json({
-            //         msg:"No BIN found for the requested product",
-            //         done:false
-            //     },{status:400})
-            // }
+            await cardIssuerQueue.add(
+                'process-card-issuing',
+                { cardIssRef: cardIssRef, body },  
+                { delay: delayMs > 0 ? delayMs : 0 } 
+              );
 
             return NextResponse.json({
                 msg:"Request started to work",done:true
             })
-
     }
     catch (error) {
         return NextResponse.json({

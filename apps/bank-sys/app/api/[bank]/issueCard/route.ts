@@ -114,6 +114,7 @@ export async function POST(req: NextRequest,{params}:{params:{bank:string}}) {
                 user_id:doesUserExists.id,
                 fullName:fullName,
                 DOB:DOB,
+                bankName:bankName as Bank_name,
                 Gender:Gender,
                 nationlIDType:nationalIDType,
                 nationalIDNumber:nationalIDNumber,
@@ -193,7 +194,7 @@ export async function POST(req: NextRequest,{params}:{params:{bank:string}}) {
         });
       }
 
-// if KYC passed then change status, another worker of bank-sys will send an api req to issuer with payload as minimal details of user 
+
 // (BIN (product type), customer details, delivery type, personalization options.)
 // set status = CARD_ISSUING
 

@@ -61,7 +61,7 @@ const worker = new Worker(
   'KYC',
   async job => {
     console.log('');
-    console.log('🔥 NEW JOB RECEIVED!');
+    console.log('🔥 NEW KYC JOB RECEIVED!');
     console.log('📋 Job ID:', job.id);
     console.log('📝 Job Name:', job.name);
     console.log('📊 Job Data: (kycRef)', JSON.stringify(job.data, null, 2));
@@ -268,7 +268,8 @@ const worker = new Worker(
               cardType:KYCJob.cardType,
               cardNetwork:KYCJob.cardNetwork,
               cardVariant:KYCJob.cardVariant,
-              cardTypeMoney:"Debit"
+              cardTypeMoney:"Debit",
+              bankName:KYCJob.bankName
             }
 
             const cardHolder={
@@ -297,6 +298,17 @@ const worker = new Worker(
 
             const bodyToSendIssuer={requestID:requestID,customerRef:customerRef,productRequested:productRequested,cardHolder:cardHolder,deliveryDetails:deliveryDetails,dailyLimit:dailyLimit,accountReference:generateAccountRef(KYCJob.acc_id.toString()),
               issuer_Bank_Sys_Shared_Secret:BANK_SYS_CLIENT_CARD_ISSUER_SECRET};
+
+            const updateReferencesCardIssuer=await prisma_Bank.debitCardApplication.update({
+              where:{
+                id:debitCardApplicationApproved.id,
+              },
+              data:{
+                customerRef:customerRef,
+                requestID:requestID,
+                accountReference:generateAccountRef(KYCJob.acc_id.toString())
+              }
+            })
 
             const rawBodySendIssuer=JSON.stringify(bodyToSendIssuer);
 

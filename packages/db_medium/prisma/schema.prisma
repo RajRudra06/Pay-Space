@@ -35,6 +35,109 @@ enum SourcesList {
   MOFA_JAPAN
 }
 
+model ApplicationRequests{
+    id                Int               @id @default(autoincrement())
+    requestID         String
+    customerRef       String  
+    accountReference  String
+    bankName          Bank_name   @default(notdefined)
+    status            DebitCardStatus
+    reasonToReject    String  @default("none") 
+    fullName          String
+    DOB               DateTime
+    Country           String
+    State             String
+    City              String
+    addressLine1      String
+    postalCode        String
+    BIN               String
+    virtualCard       Boolean
+    deliveryTime      DateTime
+    dailyPOSLimit     POSLimit        @default(POS_60000)
+    dailyATMLimit     DailyATMLimit   @default(ATM_30000)
+}
+
+model IssuedCards{
+      processorCardId                Int               @id @default(autoincrement())
+      requestID         String
+      customerRef       String  
+      accountReference  String
+      bankName          Bank_name   @default(notdefined)
+      encryptedPAN      String
+      encryptedCVV      String
+      encryptedPIN      String
+      keyReference      String
+      BINNumber         String
+      last4PAN          String
+      expiryMonth       ExpiryMonth
+      expiryYear        Int
+      cardType          CardType
+      cardNetwork       CardNetwork
+      productCode       String
+      cardStatus        DebitCardStatus
+      networkApprovalCode String
+      dailyPOSLimit     POSLimit        @default(POS_60000)
+      dailyATMLimit     DailyATMLimit   @default(ATM_30000)
+      created_at        DateTime  @default(now())
+}
+
+enum CardNetwork{
+  Visa
+  MasterCard
+  RuPay
+}
+enum DebitCardStatus{
+  UnderProcess
+  Issued
+  Activated
+  Deactivated
+  Blocked
+  Suspended
+  Closed
+  Expired
+  Rejected
+}
+
+enum CardType{
+  Physical 
+  Virtual
+}
+
+enum ExpiryMonth {
+  January
+  February
+  March
+  April
+  May
+  June
+  July
+  August
+  September
+  October
+  November
+  December
+}
+
+enum Bank_name {
+  icici
+  sbi
+  hdfc
+  ubi
+  notdefined
+}
+
+enum POSLimit {
+  POS_60000  @map("60000")
+  POS_250000 @map("250000")
+  POS_400000 @map("400000")
+}
+
+enum DailyATMLimit {
+  ATM_30000  @map("30000")
+  ATM_60000  @map("60000")
+  ATM_100000 @map("100000")
+}
+
 model BIN_NUMBERS {
   id              Int               @id @default(autoincrement())
   network      Network
@@ -45,7 +148,7 @@ model BIN_NUMBERS {
   Country      Country
   Currency     Currency
   nextAccount     BigInt   @default(0) 
-  allocatedCount  Int      @default(0)
+  allocatedCount  BigInt      @default(0)
 }
 
 enum Network {

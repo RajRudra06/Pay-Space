@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "public"."BIN_NUMBERS" ALTER COLUMN "allocatedCount" SET DATA TYPE BIGINT;

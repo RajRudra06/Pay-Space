@@ -189,6 +189,7 @@ model DebitCardApplication{
   State            String?
   postalCode       String?    @db.Char(6)
   Country          String?    @default("India")
+  bankName         Bank_name  @default(notdefined)
   acc_id           Int
   acc_number       String
   acc_name         String
@@ -211,7 +212,10 @@ model DebitCardApplication{
   existing_Loans   Boolean  @default(false)
   loanAmount       Int
   reasonToReject   String?  @default("UnderProcess")
-
+  customerRef      String?  @default("notdefined")
+  requestID        String?  @default("notdefined")
+  accountReference String?  @default("notdefined")
+        
   user             User       @relation(fields: [user_id], references: [id])
   accounts         Accounts   @relation(fields: [acc_id], references: [acc_id])
 
